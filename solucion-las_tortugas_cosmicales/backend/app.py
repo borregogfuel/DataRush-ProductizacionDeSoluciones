@@ -15,8 +15,7 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 ML_DIR = os.path.join(PROJECT_ROOT, 'ML')
 
 # Add ML directory to Python path
-if ML_DIR not in sys.path:
-    sys.path.append(ML_DIR)
+sys.path.insert(0, ML_DIR)  # Ensure ML directory is at the start of sys.path
 
 # Configure paths
 MODEL_PATH = os.path.join(ML_DIR, 'safety_model.joblib')
@@ -33,26 +32,38 @@ app = Flask(__name__)
 CORS(app)
 
 def get_safety_model():
-    """Load or create the safety model"""
     try:
         if os.path.exists(MODEL_PATH):
             print("Loading existing model...")
             return joblib.load(MODEL_PATH)
         else:
             print("Creating new model...")
-            # If model doesn't exist, train a new one
             try:
-                sys.path.insert(0, ML_DIR)
-                import main
+                # First read the CSV data
+                print("Reading CSV data...")
                 df = pd.read_csv(DATA_PATH)
+                
+                # Then modify the Python path and import main
+                sys.path.insert(0, ML_DIR)
+                print(f"Python path: {sys.path}")
+                print("Attempting to import main module...")
+                import main
+                print("Main module imported successfully")
+                df = pd.read_csv(DATA_PATH)
+                print("Processing data...")
                 df = main.load_and_preprocess_data(DATA_PATH)
+                print("Creating safety index...")
                 safety_data = main.create_safety_index(df)
+                print("Training model...")
                 model = main.train_safety_model(safety_data)
                 print("Saving model...")
                 joblib.dump(model, MODEL_PATH)
                 return model
             except Exception as e:
                 print(f"Error importing/training model: {str(e)}")
+                print(f"Full error details:")
+                import traceback
+                traceback.print_exc()
                 # Fallback to create a simple model if import fails
                 print("Creating fallback model...")
                 model = RandomForestRegressor(n_estimators=100, random_state=42)

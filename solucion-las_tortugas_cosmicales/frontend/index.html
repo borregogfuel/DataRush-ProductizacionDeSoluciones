@@ -1,221 +1,462 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Late Night Safety Index</title>
-		<style>
-			:root {
-				--bg: #0f172a;
-				--panel: #111827;
-				--text: #e5e7eb;
-				--muted: #9ca3af;
-				--accent: #60a5fa;
-			}
-			html, body { height: 100%; }
-			body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--text); }
-			.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
-			header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; }
-			h1 { font-size: 22px; margin: 0; }
-			.controls { display:flex; gap: 8px; align-items:center; color: var(--muted); }
-			.cards { display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0 20px; }
-			.card { background: var(--panel); border: 1px solid #1f2937; border-radius: 10px; padding: 14px; }
-			.card h3 { margin: 0 0 4px; font-size: 13px; color: var(--muted); font-weight: 600; }
-			.card .value { font-size: 22px; font-weight: 700; color: var(--text); }
-			.grid { display:grid; grid-template-columns: 1fr; gap: 16px; }
-			.panel { background: var(--panel); border:1px solid #1f2937; border-radius: 10px; padding: 14px; }
-			.panel h2 { margin: 0 0 10px; font-size: 16px; color: var(--muted); }
-			table { width:100%; border-collapse: collapse; font-size: 13px; }
-			th, td { border-bottom: 1px solid #1f2937; padding: 8px 6px; text-align: right; }
-			th { text-align: right; color: var(--muted); font-weight: 600; }
-			th:first-child, td:first-child { text-align: left; }
-			caption { text-align:left; color: var(--muted); margin-bottom: 8px; }
-			.error { color: #fecaca; background: #7f1d1d; border: 1px solid #b91c1c; padding: 8px 10px; border-radius: 8px; }
-			footer { margin-top: 18px; color: var(--muted); font-size: 12px; text-align: center; }
-			.small { color: var(--muted); font-size: 12px; }
-			.badge { padding: 2px 6px; border-radius: 999px; background: #1f2937; border:1px solid #374151; font-size: 11px; color: var(--muted); }
-			@media (max-width: 800px) { .cards { grid-template-columns: 1fr; } }
-		</style>
-		<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-	</head>
-	<body>
-			<div id="loading" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:100;background:rgba(15,23,42,0.85);color:#fff;align-items:center;justify-content:center;font-size:2em;">
-				<div style="margin:auto;">Loading...</div>
-			</div>
-			<div class="container">
-			<header>
-				<h1>Late Night Safety Index <span class="badge">NYC Yellow Taxi</span></h1>
-						<div class="controls">
-							<label for="monthSelect" class="small">Month:</label>
-							<select id="monthSelect">
-								<option value="2023-01">Jan 2023</option>
-								<option value="2023-02">Feb 2023</option>
-								<option value="2023-03">Mar 2023</option>
-								<option value="2023-04">Apr 2023</option>
-								<option value="2023-05">May 2023</option>
-								<option value="2023-06">Jun 2023</option>
-								<option value="2023-07">Jul 2023</option>
-								<option value="2023-08">Aug 2023</option>
-								<option value="2023-09">Sep 2023</option>
-								<option value="2023-10">Oct 2023</option>
-								<option value="2023-11">Nov 2023</option>
-								<option value="2023-12">Dec 2023</option>
-							</select>
-							<label for="apiBase" class="small">API:</label>
-							<input id="apiBase" value="http://127.0.0.1:5000" size="26" />
-							<button id="reloadBtn">Reload</button>
-						</div>
-			</header>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Safe Route Planner - NYC</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #111827;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --accent: #60a5fa;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+        
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; 
+        }
+        
+        body { 
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            background: var(--bg); 
+            color: var(--text); 
+        }
+        
+        #sidebar {
+            background: var(--panel);
+            padding: 20px;
+            height: 100vh;
+            overflow-y: auto;
+            border-right: 1px solid #1f2937;
+        }
+        
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        
+        .search-box {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            color: var(--muted);
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #1f2937;
+            border-radius: 4px;
+            background: var(--bg);
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        .safety-info {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .safety-score {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .safety-label {
+            text-align: center;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        
+        .safer-times {
+            margin-top: 15px;
+        }
+        
+        .safer-time-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #1f2937;
+        }
+        
+        .very-safe { background: var(--success); }
+        .safe { background: #059669; }
+        .moderate { background: var(--warning); }
+        .caution { background: #dc2626; }
+        .not-recommended { background: var(--danger); }
+        
+        #error {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h1>Safe Route Planner</h1>
+        <div id="error"></div>
+        
+        <div class="search-box">
+            <div class="input-group">
+                <label for="origin">Origin</label>
+                <input id="origin" type="text" placeholder="Enter starting location">
+            </div>
+            
+            <div class="input-group">
+                <label for="destination">Destination</label>
+                <input id="destination" type="text" placeholder="Enter destination">
+            </div>
+            
+            <div class="input-group">
+                <label for="date">Date</label>
+                <input id="date" type="date">
+            </div>
+            
+            <div class="input-group">
+                <label for="time">Time</label>
+                <input id="time" type="time">
+            </div>
+            
+            <button id="calculate">Calculate Safe Route</button>
+        </div>
+        
+        <div id="safety-info" class="safety-info" style="display: none;">
+            <h2>Route Safety Information</h2>
+            
+            <div class="safety-score">
+                <span id="safety-score">--</span>/100
+            </div>
+            
+            <div id="safety-label" class="safety-label">
+                --
+            </div>
+            
+            <div class="safer-times">
+                <h3>Safer Times to Travel</h3>
+                <div id="safer-times-list"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <script src="https://unpkg.com/amazon-location-helpers@1.x/dist/amazon-location-helpers.min.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@2/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@2/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1028.0.min.js"></script>
+    
+    <script>
+        let map;
+        let originMarker;
+        let destinationMarker;
+        let directionsLayer;
+        
+        // AWS Credentials - Replace with your own values from AWS Console
+        const awsConfig = {
+            region: 'us-east-1',
+            credentials: {
+                accessKeyId: 'YOUR_ACCESS_KEY_ID',
+                secretAccessKey: 'YOUR_SECRET_ACCESS_KEY'
+            }
+        };
 
-			<div id="error" class="error" style="display:none"></div>
-
-			<section class="cards">
-				<div class="card">
-					<h3>Total late-night solo rides</h3>
-					<div id="totalRides" class="value">—</div>
-				</div>
-				<div class="card">
-					<h3>Avg distance (mi)</h3>
-					<div id="avgDistance" class="value">—</div>
-				</div>
-				<div class="card">
-					<h3>Avg fare ($)</h3>
-					<div id="avgFare" class="value">—</div>
-				</div>
-			</section>
-
-			<div class="grid">
-				<div class="panel">
-					<h2>Hourly trends (00:00–03:59)</h2>
-					<canvas id="hourlyChart" height="120"></canvas>
-				</div>
-
-				<div class="panel">
-								<h2>Top 20 zones by Safety Index</h2>
-					<table>
-						<thead>
-							<tr>
-											<th>Zone</th>
-								<th>Safety Index</th>
-								<th>Total rides</th>
-								<th>Avg distance</th>
-								<th>Avg fare</th>
-							</tr>
-						</thead>
-						<tbody id="zoneTableBody"></tbody>
-					</table>
-				</div>
-			</div>
-
-			<footer>
-				Data: NYC TLC (public) • Built for Late Night Safety Index
-			</footer>
-		</div>
-
-		<script>
-			const $ = (sel) => document.querySelector(sel);
-			let hourlyChart;
-
-			function showError(msg) {
-				const el = $('#error');
-				el.textContent = msg;
-				el.style.display = 'block';
-			}
-
-			function hideError() { $('#error').style.display = 'none'; }
-
-					function getSelectedMonth() {
-						return $('#monthSelect').value;
-					}
-
-					async function fetchJson(path) {
-						const base = $('#apiBase').value.replace(/\/$/, '');
-						const month = getSelectedMonth();
-						const url = `${base}${path}?month=${month}`;
-						const res = await fetch(url);
-						if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
-						return res.json();
-					}
-
-			function formatNumber(n, digits=0) {
-				if (n === null || n === undefined || Number.isNaN(n)) return '—';
-				return Number(n).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
-			}
-
-			function renderSummary(summary) {
-				$('#totalRides').textContent = formatNumber(summary.total_rides);
-				$('#avgDistance').textContent = formatNumber(summary.avg_distance, 2);
-				$('#avgFare').textContent = formatNumber(summary.avg_fare, 2);
-			}
-
-					function renderZoneTable(rows) {
-				// Sort by safety_index desc and take top 20
-				const top = [...rows].sort((a,b) => (b.safety_index ?? 0) - (a.safety_index ?? 0)).slice(0, 20);
-				const tbody = $('#zoneTableBody');
-				tbody.innerHTML = top.map(r => `
-					<tr>
-								<td>${(r.zone_name ?? r.PULocationID) || 'Unknown'}</td>
-						<td>${formatNumber(r.safety_index, 3)}</td>
-						<td>${formatNumber(r.total_rides)}</td>
-						<td>${formatNumber(r.avg_distance, 2)}</td>
-						<td>${formatNumber(r.avg_fare, 2)}</td>
-					</tr>
-				`).join('');
-			}
-
-			function renderHourlyChart(data) {
-				const ctx = $('#hourlyChart');
-				const hours = [0,1,2,3];
-				const values = hours.map(h => data[h] ?? 0);
-				if (hourlyChart) hourlyChart.destroy();
-				hourlyChart = new Chart(ctx, {
-					type: 'line',
-					data: {
-						labels: hours.map(h => `${h}:00`),
-						datasets: [{
-							label: 'Rides',
-							data: values,
-							borderColor: '#60a5fa',
-							backgroundColor: 'rgba(96,165,250,0.2)',
-							tension: 0.3,
-							fill: true,
-						}]
-					},
-					options: {
-						plugins: { legend: { display: false } },
-						scales: {
-							x: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' } },
-							y: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' }, beginAtZero: true }
-						}
-					}
-				});
-			}
-
-					function showLoading() { document.getElementById('loading').style.display = 'flex'; }
-					function hideLoading() { document.getElementById('loading').style.display = 'none'; }
-
-					async function loadAll() {
-						showLoading();
-						hideError();
-						try {
-							const [summary, zones, hourly] = await Promise.all([
-								fetchJson('/summary'),
-								fetchJson('/zone-stats'),
-								fetchJson('/hourly-trends'),
-							]);
-							renderSummary(summary);
-							renderZoneTable(zones);
-							renderHourlyChart(hourly);
-						} catch (err) {
-							showError(err.message + '\nTip: ensure your Flask app is running and CORS is allowed.');
-							console.error(err);
-						}
-						hideLoading();
-					}
-
-			$('#reloadBtn').addEventListener('click', loadAll);
-			$('#monthSelect').addEventListener('change', loadAll);
-			window.addEventListener('load', loadAll);
-		</script>
-	</body>
-	</html>
+        // Initialize AWS Location Service
+        const client = new AWS.Location(awsConfig);
+        
+        async function initMap() {
+            // Create MapLibre map centered on NYC
+            map = new maplibregl.Map({
+                container: 'map',
+                style: await amazonLocationHelpers.createMapStyle({
+                    region: awsConfig.region,
+                    credentials: awsConfig.credentials,
+                    mapName: 'YOUR_MAP_NAME' // Replace with your AWS Location Service map name
+                }),
+                center: [-74.0060, 40.7128],
+                zoom: 12
+            });
+            
+            // Initialize the directions service and renderer
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                map: map,
+                suppressMarkers: true
+            });
+            
+            // Setup event listeners for search inputs
+            setupPlacesSearch();
+        }
+        
+        async function searchPlace(searchText) {
+            try {
+                const params = {
+                    IndexName: 'YOUR_PLACE_INDEX', // Replace with your AWS Location Service place index
+                    Text: searchText,
+                    FilterBBox: [-74.2591, 40.4774, -73.7004, 40.9176], // NYC bounds
+                    MaxResults: 5
+                };
+                
+                const response = await client.searchPlaceIndexForText(params).promise();
+                return response.Results.map(result => ({
+                    text: result.Place.Label,
+                    coordinates: result.Place.Geometry.Point
+                }));
+            } catch (error) {
+                console.error('Error searching places:', error);
+                return [];
+            }
+        }
+        
+        function setupPlacesSearch() {
+            const originInput = document.getElementById('origin');
+            const destinationInput = document.getElementById('destination');
+            
+            async function handleSearch(input, isOrigin) {
+                const results = await searchPlace(input.value);
+                if (results.length > 0) {
+                    const position = results[0].coordinates;
+                    
+                    // Remove existing marker
+                    if (isOrigin && originMarker) {
+                        originMarker.remove();
+                    } else if (!isOrigin && destinationMarker) {
+                        destinationMarker.remove();
+                    }
+                    
+                    // Create new marker
+                    const marker = new maplibregl.Marker({
+                        color: isOrigin ? '#10b981' : '#ef4444'
+                    })
+                    .setLngLat(position)
+                    .addTo(map);
+                    
+                    if (isOrigin) {
+                        originMarker = marker;
+                    } else {
+                        destinationMarker = marker;
+                    }
+                    
+                    // Update input value
+                    input.value = results[0].text;
+                    
+                    // Center map on result
+                    map.flyTo({
+                        center: position,
+                        zoom: 14
+                    });
+                }
+            }
+            
+            // Add event listeners for search
+            originInput.addEventListener('change', () => handleSearch(originInput, true));
+            destinationInput.addEventListener('change', () => handleSearch(destinationInput, false));
+        }
+        
+        async function calculateRoute() {
+            const origin = document.getElementById('origin').value;
+            const destination = document.getElementById('destination').value;
+            const time = document.getElementById('time').value;
+            const date = document.getElementById('date').value;
+            
+            if (!origin || !destination || !time || !date) {
+                showError('Please fill in all fields');
+                return;
+            }
+            
+            try {
+                // Get coordinates for origin and destination
+                const [originResults, destResults] = await Promise.all([
+                    searchPlace(origin),
+                    searchPlace(destination)
+                ]);
+                
+                if (!originResults.length || !destResults.length) {
+                    throw new Error('Could not find locations');
+                }
+                
+                // Calculate route using AWS Location Service
+                const routeParams = {
+                    CalculatorName: 'YOUR_ROUTE_CALCULATOR', // Replace with your AWS Location Service route calculator name
+                    DeparturePosition: originResults[0].coordinates,
+                    DestinationPosition: destResults[0].coordinates,
+                    TravelMode: 'Car'
+                };
+                
+                const routeResponse = await client.calculateRoute(routeParams).promise();
+                
+                // Clear existing route if any
+                if (directionsLayer) {
+                    map.removeLayer('route');
+                    map.removeSource('route');
+                }
+                
+                // Add the route to the map
+                map.addSource('route', {
+                    type: 'geojson',
+                    data: {
+                        type: 'Feature',
+                        properties: {},
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: routeResponse.Legs[0].Geometry.LineString
+                        }
+                    }
+                });
+                
+                map.addLayer({
+                    id: 'route',
+                    type: 'line',
+                    source: 'route',
+                    layout: {
+                        'line-join': 'round',
+                        'line-cap': 'round'
+                    },
+                    paint: {
+                        'line-color': '#60a5fa',
+                        'line-width': 4
+                    }
+                });
+                
+                // Fit the map to show the entire route
+                const bounds = new maplibregl.LngLatBounds();
+                routeResponse.Legs[0].Geometry.LineString.forEach(coord => 
+                    bounds.extend(coord)
+                );
+                map.fitBounds(bounds, {
+                    padding: 50
+                });
+                
+                // Get the precincts for origin and destination
+                // This is a simplified example - you would need to implement the actual precinct lookup
+                const originPrecinct = 1; // Example precinct
+                const destinationPrecinct = 2; // Example precinct
+                
+                // Get the hour from the time
+                const [hours] = time.split(':');
+                
+                // Call your safety prediction API
+                const response = await fetch('http://127.0.0.1:5000/predict-route-safety', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        start_precinct: originPrecinct,
+                        end_precinct: destinationPrecinct,
+                        time: time
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to get safety prediction');
+                
+                const safetyData = await response.json();
+                displaySafetyInfo(safetyData);
+                
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+        
+        function displaySafetyInfo(data) {
+            document.getElementById('safety-info').style.display = 'block';
+            document.getElementById('safety-score').textContent = Math.round(data.route_safety_score);
+            
+            const labelElement = document.getElementById('safety-label');
+            labelElement.textContent = data.safety_label;
+            
+            // Remove any existing classes
+            labelElement.classList.remove('very-safe', 'safe', 'moderate', 'caution', 'not-recommended');
+            
+            // Add appropriate class based on safety label
+            switch(data.safety_label) {
+                case 'Very Safe':
+                    labelElement.classList.add('very-safe');
+                    break;
+                case 'Safe':
+                    labelElement.classList.add('safe');
+                    break;
+                case 'Moderate':
+                    labelElement.classList.add('moderate');
+                    break;
+                case 'Use Caution':
+                    labelElement.classList.add('caution');
+                    break;
+                case 'Not Recommended':
+                    labelElement.classList.add('not-recommended');
+                    break;
+            }
+            
+            // Display safer times
+            const saferTimesList = document.getElementById('safer-times-list');
+            saferTimesList.innerHTML = data.safer_times
+                .map(time => `
+                    <div class="safer-time-item">
+                        <span>${time.hour}</span>
+                        <span>Safety: ${Math.round(time.safety_score)}</span>
+                    </div>
+                `)
+                .join('');
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Add event listener to calculate button
+        document.getElementById('calculate').addEventListener('click', calculateRoute);
+        
+        // Initialize everything when the Google Maps script is ready
+        google.maps.event.addDomListener(window, 'load', initMap);
+    </script>
+</body>
+</html>

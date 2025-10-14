@@ -1,0 +1,13 @@
+* [33m2b2359f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mofficial-branch[m[33m, [m[1;31morigin/official-branch[m[33m)[m Agregar endpoints a app.py
+* [33mbf860dd[m Machine Learning
+* [33m7e8be58[m Agregar del 2023 hasta Date la data de complaints
+* [33mb7710d5[m[33m ([m[1;31morigin/solucion-las_tortugas_cosmicales[m[33m, [m[1;31morigin/solucion[m[33m)[m Agregar mas datos a la lista de complaints
+* [33m06988a0[m[33m ([m[1;31morigin/solicion-las_tortugas_cosmicales[m[33m)[m Agregar directortio ML y poner datos de quejas
+* [33me34b9fb[m docs: update root README to describe project and point to team folder
+* [33mcd7f47c[m feat: add loading spinner, month selector, and backend multi-month support
+* [33m82f388a[m chore: add .gitignore and team README with quick start
+* [33m0818b9a[m feat: backend APIs + CORS + zone lookup; frontend dashboard to consume APIs
+* [33m557e88c[m Created index for frontend
+* [33m0fada39[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Added files
+* [33m4eef4a7[m Update README.md
+* [33m76bfcee[m Create README.md
