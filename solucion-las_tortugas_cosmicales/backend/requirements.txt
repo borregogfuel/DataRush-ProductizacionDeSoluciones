@@ -1,7 +1,4 @@
 pandas
 flask
 pyarrow
-scikit-learn
-numpy
-joblib
 flask-cors
