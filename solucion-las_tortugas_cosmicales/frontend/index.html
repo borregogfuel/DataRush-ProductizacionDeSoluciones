@@ -1,498 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Safe Route Planner - NYC</title>
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
-    <style>
-        :root {
-            --bg: #0f172a;
-            --panel: #111827;
-            --text: #e5e7eb;
-            --muted: #9ca3af;
-            --accent: #60a5fa;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        
-        html, body { 
-            height: 100%; 
-            margin: 0; 
-            padding: 0;
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; 
-        }
-        
-        body { 
-            display: grid;
-            grid-template-columns: 400px 1fr;
-            background: var(--bg); 
-            color: var(--text); 
-        }
-        
-        #sidebar {
-            background: var(--panel);
-            padding: 20px;
-            height: 100vh;
-            overflow-y: auto;
-            border-right: 1px solid #1f2937;
-        }
-        
-        #map {
-            height: 100vh;
-            width: 100%;
-        }
-        
-        .search-box {
-            background: var(--bg);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .input-group {
-            margin-bottom: 15px;
-        }
-        
-        label {
-            display: block;
-            color: var(--muted);
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #1f2937;
-            border-radius: 4px;
-            background: var(--bg);
-            color: var(--text);
-            margin-bottom: 10px;
-        }
-        
-        button {
-            width: 100%;
-            padding: 10px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        
-        button:hover {
-            opacity: 0.9;
-        }
-        
-        .safety-info {
-            background: var(--bg);
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-        
-        .safety-score {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            margin: 10px 0;
-        }
-        
-        .safety-label {
-            text-align: center;
-            padding: 5px 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-weight: 600;
-        }
-        
-        .safer-times {
-            margin-top: 15px;
-        }
-        
-        .safer-time-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #1f2937;
-        }
-        
-        .very-safe { background: var(--success); }
-        .safe { background: #059669; }
-        .moderate { background: var(--warning); }
-        .caution { background: #dc2626; }
-        .not-recommended { background: var(--danger); }
-        
-        #error {
-            color: var(--danger);
-            background: rgba(239, 68, 68, 0.1);
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            display: none;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NYC Late Night Safety Index</title>
+  <style>
+    :root {
+      --bg: #0f172a; --panel: #111827; --text: #e5e7eb; --muted: #9ca3af; --accent: #60a5fa; --ok: #10b981;
+    }
+    html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    header { padding:16px; background:var(--panel); display:flex; gap:12px; align-items:center; flex-wrap: wrap; }
+    header h1 { margin:0; font-size:18px; }
+    input, select, button { background:#0b1220; color:var(--text); border:1px solid #1f2937; border-radius:6px; padding:8px 10px; }
+    button { background:var(--accent); border:none; cursor:pointer; }
+    main { padding:16px; display:grid; gap:16px; grid-template-columns: 1fr; }
+    .cards { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; }
+    .card { background:var(--panel); padding:16px; border-radius:10px; }
+    .label { color:var(--muted); font-size:12px; }
+    .value { font-size:22px; font-weight:700; margin-top:6px; }
+    .panel { background:var(--panel); padding:16px; border-radius:10px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:8px; border-bottom:1px solid #1f2937; text-align:left; font-size:14px; }
+    th { color:var(--muted); font-weight:600; }
+    .toolbar { display:flex; gap:8px; align-items:center; }
+    .loading { position:fixed; inset:0; background:rgba(15,23,42,0.7); display:none; align-items:center; justify-content:center; z-index:999; }
+    .spinner { width:56px; height:56px; border:6px solid #1f2937; border-top-color: var(--accent); border-radius:50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <div id="sidebar">
-        <h1>Safe Route Planner</h1>
-        <div id="error"></div>
-        
-        <div class="search-box">
-            <div class="input-group">
-                <label for="origin">Origin</label>
-                <input id="origin" type="text" placeholder="Enter starting location">
-            </div>
-            
-            <div class="input-group">
-                <label for="destination">Destination</label>
-                <input id="destination" type="text" placeholder="Enter destination">
-            </div>
-            
-            <div class="input-group">
-                <label for="date">Date</label>
-                <input id="date" type="date">
-            </div>
-            
-            <div class="input-group">
-                <label for="time">Time</label>
-                <input id="time" type="time">
-            </div>
-            
-            <button id="calculate">Calculate Safe Route</button>
-        </div>
-        
-        <div id="safety-info" class="safety-info" style="display: none;">
-            <h2>Route Safety Information</h2>
-            
-            <div class="safety-score">
-                <span id="safety-score">--</span>/100
-            </div>
-            
-            <div id="safety-label" class="safety-label">
-                --
-            </div>
-            
-            <div class="safer-times">
-                <h3>Safer Times to Travel</h3>
-                <div id="safer-times-list"></div>
-            </div>
-        </div>
+  <div class="loading" id="loading"><div class="spinner"></div></div>
+  <header>
+    <h1>NYC Late Night Safety Index</h1>
+    <div class="toolbar">
+      <label class="label" for="apiBase">API</label>
+      <input id="apiBase" value="http://127.0.0.1:5000" style="min-width:260px" />
+      <label class="label" for="month">Month</label>
+      <select id="month">
+        <option value="2023-01">2023-01</option>
+        <option value="2023-02">2023-02</option>
+        <option value="2023-03">2023-03</option>
+        <option value="2023-04">2023-04</option>
+      </select>
+      <button id="reload">Reload</button>
     </div>
-    
-    <div id="map"></div>
-    
-    <script src="https://unpkg.com/amazon-location-helpers@1.x/dist/amazon-location-helpers.min.js"></script>
-    <script src="https://unpkg.com/maplibre-gl@2/dist/maplibre-gl.js"></script>
-    <link href="https://unpkg.com/maplibre-gl@2/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1028.0.min.js"></script>
-    
-    <script>
-        let map;
-        let originMarker;
-        let destinationMarker;
-        let directionsLayer;
-        
-        // AWS configuration - DO NOT put long-lived credentials in client-side code.
-        // We use Amazon Cognito Identity Pool to obtain temporary, limited credentials.
-        // Replace identityPoolId below with the one you create in AWS Cognito.
-        const awsConfig = {
-            region: 'us-east-1',
-            identityPoolId: 'REPLACE_WITH_IDENTITY_POOL_ID'
-        };
+  </header>
+  <main>
+    <section class="cards">
+      <div class="card">
+        <div class="label">Total rides (00:00–03:59 solo)</div>
+        <div class="value" id="totalRides">—</div>
+      </div>
+      <div class="card">
+        <div class="label">Avg distance (mi)</div>
+        <div class="value" id="avgDistance">—</div>
+      </div>
+      <div class="card">
+        <div class="label">Avg fare ($)</div>
+        <div class="value" id="avgFare">—</div>
+      </div>
+    </section>
 
-        // configure AWS SDK region
-        AWS.config.region = awsConfig.region;
+    <section class="panel">
+      <h3 style="margin-top:0">Hourly trends</h3>
+      <canvas id="hourlyChart" height="90"></canvas>
+    </section>
 
-        // Use Cognito Identity Pool to obtain temporary credentials for the browser
-        AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-            IdentityPoolId: awsConfig.identityPoolId
+    <section class="panel">
+      <h3 style="margin-top:0">Zone safety table</h3>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Zone</th>
+              <th>Borough</th>
+              <th>Total rides</th>
+              <th>Avg distance</th>
+              <th>Avg fare</th>
+              <th>Safety index</th>
+            </tr>
+          </thead>
+          <tbody id="zoneBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const qs = (id) => document.getElementById(id);
+    const showLoading = (show) => qs('loading').style.display = show ? 'flex' : 'none';
+    let chart;
+
+    function getApiBase() { return qs('apiBase').value.trim().replace(/\/$/, ''); }
+    function getMonth() { return qs('month').value; }
+
+    async function fetchJson(path) {
+      const url = `${getApiBase()}${path}${path.includes('?') ? '&' : '?'}month=${encodeURIComponent(getMonth())}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Request failed: ${resp.status}`);
+      return resp.json();
+    }
+
+    function fmt(x, digits=2) {
+      if (x === null || x === undefined || Number.isNaN(x)) return '—';
+      return Number(x).toFixed(digits);
+    }
+
+    async function loadData() {
+      try {
+        showLoading(true);
+        const [summary, hourly, zones] = await Promise.all([
+          fetchJson('/summary'),
+          fetchJson('/hourly-trends'),
+          fetchJson('/zone-stats')
+        ]);
+
+        // Summary cards
+        qs('totalRides').textContent = summary.total_rides?.toLocaleString?.() ?? summary.total_rides ?? '—';
+        qs('avgDistance').textContent = fmt(summary.avg_distance);
+        qs('avgFare').textContent = fmt(summary.avg_fare);
+
+        // Hourly chart
+        const labels = Array.from({length:24}, (_,i)=> i);
+        const data = labels.map(h => hourly[h] || 0);
+        if (chart) chart.destroy();
+        const ctx = qs('hourlyChart').getContext('2d');
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Rides', data, backgroundColor: '#60a5fa' }]},
+          options: {
+            responsive: true,
+            scales: { x: { grid: { color:'#1f2937' }}, y: { grid: { color:'#1f2937' }, beginAtZero: true }},
+            plugins: { legend: { display:false } }
+          }
         });
 
-        // Helper: return an object { accessKeyId, secretAccessKey, sessionToken }
-        async function getAwsCredentialsObject() {
-            return new Promise((resolve, reject) => {
-                AWS.config.credentials.get(function(err) {
-                    if (err) return reject(err);
-                    const creds = AWS.config.credentials;
-                    resolve({
-                        accessKeyId: creds.accessKeyId,
-                        secretAccessKey: creds.secretAccessKey,
-                        sessionToken: creds.sessionToken
-                    });
-                });
-            });
+        // Zone table (sorted by safety index desc)
+        const body = qs('zoneBody');
+        body.innerHTML = '';
+        const sorted = [...zones].sort((a,b)=> (b.safety_index??0) - (a.safety_index??0));
+        for (const z of sorted) {
+          const tr = document.createElement('tr');
+          const safetyPct = z.safety_index == null ? '—' : `${Math.round(z.safety_index * 100)}%`;
+          tr.innerHTML = `
+            <td>${z.zone_name ?? z.PULocationID ?? ''}</td>
+            <td>${z.borough ?? ''}</td>
+            <td>${z.total_rides?.toLocaleString?.() ?? z.total_rides ?? ''}</td>
+            <td>${fmt(z.avg_distance)}</td>
+            <td>${fmt(z.avg_fare)}</td>
+            <td>${safetyPct}</td>
+          `;
+          body.appendChild(tr);
         }
+      } catch (err) {
+        alert('Failed to load data: ' + (err?.message || err));
+      } finally {
+        showLoading(false);
+      }
+    }
 
-        // Lazily create an AWS Location client using the temporary credentials
-        let awsLocationClient = null;
-        async function ensureAwsLocationClient() {
-            if (awsLocationClient) return awsLocationClient;
-            const credsObj = await getAwsCredentialsObject();
-            awsLocationClient = new AWS.Location({ region: awsConfig.region, credentials: credsObj });
-            return awsLocationClient;
-        }
-        
-        async function initMap() {
-            // Create MapLibre map centered on NYC
-            // Try to create an AWS-backed map style, but fall back to a public style if anything fails
-            let mapStyle = 'https://demotiles.maplibre.org/style.json'; // reliable fallback
-            try {
-                // ensure we have credentials available (Cognito will populate AWS.config.credentials)
-                const credsObj = await getAwsCredentialsObject();
-                if (typeof amazonLocationHelpers !== 'undefined') {
-                    const awsStyle = await amazonLocationHelpers.createMapStyle({
-                        region: awsConfig.region,
-                        credentials: credsObj,
-                        mapName: 'datarush' // Replace with your AWS Location Service map name
-                    });
-                    if (awsStyle) mapStyle = awsStyle;
-                } else {
-                    console.warn('amazonLocationHelpers not available; using fallback map style');
-                }
-            } catch (err) {
-                console.warn('Failed to create AWS map style or obtain credentials; using fallback', err);
-            }
-
-            map = new maplibregl.Map({
-                container: 'map',
-                style: mapStyle,
-                center: [-74.0060, 40.7128],
-                zoom: 12
-            });
-            
-            // Setup event listeners for search inputs
-            setupPlacesSearch();
-        }
-        
-        async function searchPlace(searchText) {
-            try {
-                const params = {
-                    IndexName: 'Datarushindex', // Replace with your AWS Location Service place index
-                    Text: searchText,
-                    FilterBBox: [-74.2591, 40.4774, -73.7004, 40.9176], // NYC bounds
-                    MaxResults: 5
-                };
-                const client = await ensureAwsLocationClient();
-                const response = await client.searchPlaceIndexForText(params).promise();
-                return response.Results.map(result => ({
-                    text: result.Place.Label,
-                    coordinates: result.Place.Geometry.Point
-                }));
-            } catch (error) {
-                console.error('Error searching places:', error);
-                return [];
-            }
-        }
-        
-        function setupPlacesSearch() {
-            const originInput = document.getElementById('origin');
-            const destinationInput = document.getElementById('destination');
-            
-            async function handleSearch(input, isOrigin) {
-                const results = await searchPlace(input.value);
-                if (results.length > 0) {
-                    const position = results[0].coordinates;
-                    
-                    // Remove existing marker
-                    if (isOrigin && originMarker) {
-                        originMarker.remove();
-                    } else if (!isOrigin && destinationMarker) {
-                        destinationMarker.remove();
-                    }
-                    
-                    // Create new marker
-                    const marker = new maplibregl.Marker({
-                        color: isOrigin ? '#10b981' : '#ef4444'
-                    })
-                    .setLngLat(position)
-                    .addTo(map);
-                    
-                    if (isOrigin) {
-                        originMarker = marker;
-                    } else {
-                        destinationMarker = marker;
-                    }
-                    
-                    // Update input value
-                    input.value = results[0].text;
-                    
-                    // Center map on result
-                    map.flyTo({
-                        center: position,
-                        zoom: 14
-                    });
-                }
-            }
-            
-            // Add event listeners for search
-            originInput.addEventListener('change', () => handleSearch(originInput, true));
-            destinationInput.addEventListener('change', () => handleSearch(destinationInput, false));
-        }
-        
-        async function calculateRoute() {
-            const origin = document.getElementById('origin').value;
-            const destination = document.getElementById('destination').value;
-            const time = document.getElementById('time').value;
-            const date = document.getElementById('date').value;
-            
-            if (!origin || !destination || !time || !date) {
-                showError('Please fill in all fields');
-                return;
-            }
-            
-            try {
-                // Get coordinates for origin and destination
-                const [originResults, destResults] = await Promise.all([
-                    searchPlace(origin),
-                    searchPlace(destination)
-                ]);
-                
-                if (!originResults.length || !destResults.length) {
-                    throw new Error('Could not find locations');
-                }
-                
-                // Calculate route using AWS Location Service
-                const routeParams = {
-                    CalculatorName: 'DataRoute', // Replace with your AWS Location Service route calculator name
-                    DeparturePosition: originResults[0].coordinates,
-                    DestinationPosition: destResults[0].coordinates,
-                    TravelMode: 'Car'
-                };
-                const client = await ensureAwsLocationClient();
-                const routeResponse = await client.calculateRoute(routeParams).promise();
-                
-                // Clear existing route if any
-                if (directionsLayer) {
-                    map.removeLayer('route');
-                    map.removeSource('route');
-                }
-                
-                // Add the route to the map
-                map.addSource('route', {
-                    type: 'geojson',
-                    data: {
-                        type: 'Feature',
-                        properties: {},
-                        geometry: {
-                            type: 'LineString',
-                            coordinates: routeResponse.Legs[0].Geometry.LineString
-                        }
-                    }
-                });
-                
-                map.addLayer({
-                    id: 'route',
-                    type: 'line',
-                    source: 'route',
-                    layout: {
-                        'line-join': 'round',
-                        'line-cap': 'round'
-                    },
-                    paint: {
-                        'line-color': '#60a5fa',
-                        'line-width': 4
-                    }
-                });
-                
-                // Fit the map to show the entire route
-                const bounds = new maplibregl.LngLatBounds();
-                routeResponse.Legs[0].Geometry.LineString.forEach(coord => 
-                    bounds.extend(coord)
-                );
-                map.fitBounds(bounds, {
-                    padding: 50
-                });
-                
-                // Get the precincts for origin and destination
-                // This is a simplified example - you would need to implement the actual precinct lookup
-                const originPrecinct = 1; // Example precinct
-                const destinationPrecinct = 2; // Example precinct
-                
-                // Get the hour from the time
-                const [hours] = time.split(':');
-                
-                // Call your safety prediction API
-                const response = await fetch('http://127.0.0.1:5000/predict-route-safety', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        start_precinct: originPrecinct,
-                        end_precinct: destinationPrecinct,
-                        time: time
-                    })
-                });
-                
-                if (!response.ok) throw new Error('Failed to get safety prediction');
-                
-                const safetyData = await response.json();
-                displaySafetyInfo(safetyData);
-                
-            } catch (error) {
-                showError(error.message);
-            }
-        }
-        
-        function displaySafetyInfo(data) {
-            document.getElementById('safety-info').style.display = 'block';
-            document.getElementById('safety-score').textContent = Math.round(data.route_safety_score);
-            
-            const labelElement = document.getElementById('safety-label');
-            labelElement.textContent = data.safety_label;
-            
-            // Remove any existing classes
-            labelElement.classList.remove('very-safe', 'safe', 'moderate', 'caution', 'not-recommended');
-            
-            // Add appropriate class based on safety label
-            switch(data.safety_label) {
-                case 'Very Safe':
-                    labelElement.classList.add('very-safe');
-                    break;
-                case 'Safe':
-                    labelElement.classList.add('safe');
-                    break;
-                case 'Moderate':
-                    labelElement.classList.add('moderate');
-                    break;
-                case 'Use Caution':
-                    labelElement.classList.add('caution');
-                    break;
-                case 'Not Recommended':
-                    labelElement.classList.add('not-recommended');
-                    break;
-            }
-            
-            // Display safer times
-            const saferTimesList = document.getElementById('safer-times-list');
-            saferTimesList.innerHTML = data.safer_times
-                .map(time => `
-                    <div class="safer-time-item">
-                        <span>${time.hour}</span>
-                        <span>Safety: ${Math.round(time.safety_score)}</span>
-                    </div>
-                `)
-                .join('');
-        }
-        
-        function showError(message) {
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-        
-        // Add event listener to calculate button
-        document.getElementById('calculate').addEventListener('click', calculateRoute);
-        
-                // Initialize when DOM is ready
-                window.addEventListener('DOMContentLoaded', initMap);
-    </script>
+    qs('reload').addEventListener('click', loadData);
+    qs('month').addEventListener('change', loadData);
+    window.addEventListener('load', loadData);
+  </script>
 </body>
 </html>
