@@ -45,7 +45,39 @@ def _get_month_lock(month: str) -> Lock:
 
 # Helper to load and process data for a given month
 def load_and_process_data(month="2023-01"):
-    """Load monthly data, filter, aggregate and cache results for faster responses."""
+    """Load monthly data, or aggregate all 2023 months if month=='all'."""
+    if month == "all":
+        months = [f"2023-{m:02d}" for m in range(1, 13)]
+        dfs = []
+        for m in months:
+            df, _ = load_and_process_data(m)
+            dfs.append(df)
+        df_night_solo = pd.concat(dfs, ignore_index=True)
+        # Aggregate zone stats across all months
+        zone_stats = df_night_solo.groupby("PULocationID").agg(
+            total_rides=("PULocationID", "size"),
+            avg_distance=("trip_distance", "mean"),
+            avg_fare=("fare_amount", "mean"),
+        )
+        min_rides = zone_stats["total_rides"].min()
+        max_rides = zone_stats["total_rides"].max()
+        if pd.isna(min_rides) or pd.isna(max_rides) or max_rides == min_rides:
+            zone_stats["safety_index"] = 0.5
+        else:
+            zone_stats["safety_index"] = (zone_stats["total_rides"] - min_rides) / (max_rides - min_rides)
+        lookup = get_lookup_df()
+        if lookup is not None:
+            zone_stats_named = (
+                zone_stats.reset_index()
+                .merge(lookup, left_on="PULocationID", right_on="LocationID", how="left")
+            )
+            zone_stats_named = zone_stats_named[[
+                "PULocationID", "zone_name", "borough", "total_rides", "avg_distance", "avg_fare", "safety_index",
+            ]]
+        else:
+            zone_stats_named = zone_stats.reset_index()
+        return df_night_solo, zone_stats_named
+
     now = datetime.utcnow()
     with _cache_lock:
         entry = _data_cache.get(month)
