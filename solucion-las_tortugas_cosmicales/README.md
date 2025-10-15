@@ -40,3 +40,37 @@ C:\Users\guill\DataRush-ProductizacionDeSoluciones\solucion-las_tortugas_cosmica
 - Python (pandas, flask, flask-cors, pyarrow)
 - Frontend: HTML + Chart.js
 
+## AWS Location (Cognito) quick setup
+
+1. In the AWS Console, go to Cognito -> Manage Identity Pools -> Create new identity pool.
+2. Allow unauthenticated identities if you want anonymous access (or require sign-in if you need users to authenticate).
+3. Note the IdentityPoolId (format `us-east-1:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`).
+4. Edit the IAM role created for the Identity Pool and attach a policy that allows only the Location resources you need (map, place index, route calculator).
+5. In `frontend/index.html` set `awsConfig.identityPoolId` to your IdentityPoolId.
+
+Example minimal IAM policy (replace account id and resource names):
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "geo:SearchPlaceIndexForText",
+                "geo:CalculateRoute",
+                "geo:GetMapTile",
+                "geo:GetMapStyleDescriptor"
+            ],
+            "Resource": [
+                "arn:aws:geo:us-east-1:123456789012:place-index/Datarushindex",
+                "arn:aws:geo:us-east-1:123456789012:route-calculator/DataRoute",
+                "arn:aws:geo:us-east-1:123456789012:map/datarush"
+            ]
+        }
+    ]
+}
+```
+
+After this, your frontend will request temporary credentials from Cognito and be able to call Amazon Location securely.
+

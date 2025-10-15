@@ -196,36 +196,72 @@
         let destinationMarker;
         let directionsLayer;
         
-        // AWS Credentials - Replace with your own values from AWS Console
+        // AWS configuration - DO NOT put long-lived credentials in client-side code.
+        // We use Amazon Cognito Identity Pool to obtain temporary, limited credentials.
+        // Replace identityPoolId below with the one you create in AWS Cognito.
         const awsConfig = {
             region: 'us-east-1',
-            credentials: {
-                accessKeyId: 'YOUR_ACCESS_KEY_ID',
-                secretAccessKey: 'YOUR_SECRET_ACCESS_KEY'
-            }
+            identityPoolId: 'REPLACE_WITH_IDENTITY_POOL_ID'
         };
 
-        // Initialize AWS Location Service
-        const client = new AWS.Location(awsConfig);
+        // configure AWS SDK region
+        AWS.config.region = awsConfig.region;
+
+        // Use Cognito Identity Pool to obtain temporary credentials for the browser
+        AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+            IdentityPoolId: awsConfig.identityPoolId
+        });
+
+        // Helper: return an object { accessKeyId, secretAccessKey, sessionToken }
+        async function getAwsCredentialsObject() {
+            return new Promise((resolve, reject) => {
+                AWS.config.credentials.get(function(err) {
+                    if (err) return reject(err);
+                    const creds = AWS.config.credentials;
+                    resolve({
+                        accessKeyId: creds.accessKeyId,
+                        secretAccessKey: creds.secretAccessKey,
+                        sessionToken: creds.sessionToken
+                    });
+                });
+            });
+        }
+
+        // Lazily create an AWS Location client using the temporary credentials
+        let awsLocationClient = null;
+        async function ensureAwsLocationClient() {
+            if (awsLocationClient) return awsLocationClient;
+            const credsObj = await getAwsCredentialsObject();
+            awsLocationClient = new AWS.Location({ region: awsConfig.region, credentials: credsObj });
+            return awsLocationClient;
+        }
         
         async function initMap() {
             // Create MapLibre map centered on NYC
+            // Try to create an AWS-backed map style, but fall back to a public style if anything fails
+            let mapStyle = 'https://demotiles.maplibre.org/style.json'; // reliable fallback
+            try {
+                // ensure we have credentials available (Cognito will populate AWS.config.credentials)
+                const credsObj = await getAwsCredentialsObject();
+                if (typeof amazonLocationHelpers !== 'undefined') {
+                    const awsStyle = await amazonLocationHelpers.createMapStyle({
+                        region: awsConfig.region,
+                        credentials: credsObj,
+                        mapName: 'datarush' // Replace with your AWS Location Service map name
+                    });
+                    if (awsStyle) mapStyle = awsStyle;
+                } else {
+                    console.warn('amazonLocationHelpers not available; using fallback map style');
+                }
+            } catch (err) {
+                console.warn('Failed to create AWS map style or obtain credentials; using fallback', err);
+            }
+
             map = new maplibregl.Map({
                 container: 'map',
-                style: await amazonLocationHelpers.createMapStyle({
-                    region: awsConfig.region,
-                    credentials: awsConfig.credentials,
-                    mapName: 'YOUR_MAP_NAME' // Replace with your AWS Location Service map name
-                }),
+                style: mapStyle,
                 center: [-74.0060, 40.7128],
                 zoom: 12
-            });
-            
-            // Initialize the directions service and renderer
-            directionsService = new google.maps.DirectionsService();
-            directionsRenderer = new google.maps.DirectionsRenderer({
-                map: map,
-                suppressMarkers: true
             });
             
             // Setup event listeners for search inputs
@@ -235,12 +271,12 @@
         async function searchPlace(searchText) {
             try {
                 const params = {
-                    IndexName: 'YOUR_PLACE_INDEX', // Replace with your AWS Location Service place index
+                    IndexName: 'Datarushindex', // Replace with your AWS Location Service place index
                     Text: searchText,
                     FilterBBox: [-74.2591, 40.4774, -73.7004, 40.9176], // NYC bounds
                     MaxResults: 5
                 };
-                
+                const client = await ensureAwsLocationClient();
                 const response = await client.searchPlaceIndexForText(params).promise();
                 return response.Results.map(result => ({
                     text: result.Place.Label,
@@ -321,12 +357,12 @@
                 
                 // Calculate route using AWS Location Service
                 const routeParams = {
-                    CalculatorName: 'YOUR_ROUTE_CALCULATOR', // Replace with your AWS Location Service route calculator name
+                    CalculatorName: 'DataRoute', // Replace with your AWS Location Service route calculator name
                     DeparturePosition: originResults[0].coordinates,
                     DestinationPosition: destResults[0].coordinates,
                     TravelMode: 'Car'
                 };
-                
+                const client = await ensureAwsLocationClient();
                 const routeResponse = await client.calculateRoute(routeParams).promise();
                 
                 // Clear existing route if any
@@ -455,8 +491,8 @@
         // Add event listener to calculate button
         document.getElementById('calculate').addEventListener('click', calculateRoute);
         
-        // Initialize everything when the Google Maps script is ready
-        google.maps.event.addDomListener(window, 'load', initMap);
+                // Initialize when DOM is ready
+                window.addEventListener('DOMContentLoaded', initMap);
     </script>
 </body>
 </html>
