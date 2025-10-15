@@ -3,7 +3,7 @@ import json
 import numpy as np
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timedelta
 import joblib
 from sklearn.ensemble import RandomForestRegressor
 import os
@@ -18,7 +18,9 @@ ML_DIR = os.path.join(PROJECT_ROOT, 'ML')
 sys.path.insert(0, ML_DIR)  # Ensure ML directory is at the start of sys.path
 
 # Configure paths
-MODEL_PATH = os.path.join(ML_DIR, 'safety_model.joblib')
+# Prefer the improved model if available
+MODEL_PATH = os.path.join(ML_DIR, 'safety_model_improved.joblib')
+FALLBACK_MODEL_PATH = os.path.join(ML_DIR, 'safety_model.joblib')
 DATA_PATH = os.path.join(ML_DIR, 'NYC_complaint_data.csv')
 
 print(f"Current directory: {CURRENT_DIR}")
@@ -31,46 +33,70 @@ app = Flask(__name__)
 # Enable CORS for all routes
 CORS(app)
 
+# ---------------- Performance: simple in-memory cache by month ----------------
+from threading import Lock
+
+CACHE_TTL_SECONDS = 60 * 30  # 30 minutes TTL; adjust as needed
+_data_cache = {}  # month -> { ts: datetime, df: DataFrame, zone_stats: DataFrame }
+_cache_lock = Lock()
+
+_lookup_df = None
+ZONE_LOOKUP_URL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+
+def get_lookup_df():
+    global _lookup_df
+    if _lookup_df is None:
+        try:
+            lookup = pd.read_csv(ZONE_LOOKUP_URL)[["LocationID", "Borough", "Zone"]]
+            lookup = lookup.rename(columns={"Zone": "zone_name", "Borough": "borough"})
+            _lookup_df = lookup
+        except Exception:
+            _lookup_df = None
+    return _lookup_df
+
 def get_safety_model():
     try:
+        # Try improved model first, then fallback
         if os.path.exists(MODEL_PATH):
-            print("Loading existing model...")
+            print("Loading improved model...")
             return joblib.load(MODEL_PATH)
-        else:
-            print("Creating new model...")
-            try:
-                # First read the CSV data
-                print("Reading CSV data...")
-                df = pd.read_csv(DATA_PATH)
-                
-                # Then modify the Python path and import main
+        if os.path.exists(FALLBACK_MODEL_PATH):
+            print("Loading fallback model...")
+            return joblib.load(FALLBACK_MODEL_PATH)
+        print("No model files found — attempting to create a model from raw data...")
+        try:
+            # First read the CSV data
+            print("Reading CSV data...")
+            df = pd.read_csv(DATA_PATH)
+
+            # Then ensure ML directory is available and import main
+            if ML_DIR not in sys.path:
                 sys.path.insert(0, ML_DIR)
-                print(f"Python path: {sys.path}")
-                print("Attempting to import main module...")
-                import main
-                print("Main module imported successfully")
-                df = pd.read_csv(DATA_PATH)
-                print("Processing data...")
-                df = main.load_and_preprocess_data(DATA_PATH)
-                print("Creating safety index...")
-                safety_data = main.create_safety_index(df)
-                print("Training model...")
-                model = main.train_safety_model(safety_data)
-                print("Saving model...")
-                joblib.dump(model, MODEL_PATH)
-                return model
-            except Exception as e:
-                print(f"Error importing/training model: {str(e)}")
-                print(f"Full error details:")
-                import traceback
-                traceback.print_exc()
-                # Fallback to create a simple model if import fails
-                print("Creating fallback model...")
-                model = RandomForestRegressor(n_estimators=100, random_state=42)
-                X = np.random.rand(100, 2)  # Sample data
-                y = np.random.rand(100)
-                model.fit(X, y)
-                return model
+            print(f"Python path: {sys.path}")
+            print("Attempting to import main module...")
+            import main
+            print("Main module imported successfully")
+            print("Processing data...")
+            df = main.load_and_preprocess_data(DATA_PATH)
+            print("Creating safety index...")
+            safety_data = main.create_safety_index(df)
+            print("Training model...")
+            model = main.train_safety_model(safety_data)
+            print("Saving model...")
+            joblib.dump(model, MODEL_PATH)
+            return model
+        except Exception as e:
+            print(f"Error importing/training model: {str(e)}")
+            print(f"Full error details:")
+            import traceback
+            traceback.print_exc()
+            # Fallback to create a simple model if import fails
+            print("Creating fallback model...")
+            model = RandomForestRegressor(n_estimators=100, random_state=42)
+            X = np.random.rand(100, 2)  # Sample data
+            y = np.random.rand(100)
+            model.fit(X, y)
+            return model
     except Exception as e:
         print(f"Error in get_safety_model: {str(e)}")
         raise
@@ -90,6 +116,13 @@ def get_safety_label(score):
 
 # Helper to load and process data for a given month
 def load_and_process_data(month="2023-01"):
+    """Load monthly data, filter, aggregate and cache results for faster responses."""
+    now = datetime.utcnow()
+    with _cache_lock:
+        entry = _data_cache.get(month)
+        if entry and now - entry["ts"] < timedelta(seconds=CACHE_TTL_SECONDS):
+            return entry["df"], entry["zone_stats"]
+
     URL = f"https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{month}.parquet"
     columns = [
         "tpep_pickup_datetime",
@@ -99,34 +132,43 @@ def load_and_process_data(month="2023-01"):
         "PULocationID",
         "DOLocationID",
         "fare_amount",
-        "payment_type"
+        "payment_type",
     ]
     df = pd.read_parquet(URL, columns=columns)
-    df["tpep_pickup_datetime"] = pd.to_datetime(df["tpep_pickup_datetime"])
+    df["tpep_pickup_datetime"] = pd.to_datetime(df["tpep_pickup_datetime"], errors="coerce")
     df["pickup_hour"] = df["tpep_pickup_datetime"].dt.hour
     df_night_solo = df[(df["pickup_hour"] >= 0) & (df["pickup_hour"] < 4) & (df["passenger_count"] == 1)]
+
     zone_stats = df_night_solo.groupby("PULocationID").agg(
         total_rides=("PULocationID", "size"),
         avg_distance=("trip_distance", "mean"),
-        avg_fare=("fare_amount", "mean")
+        avg_fare=("fare_amount", "mean"),
     )
+
+    # Normalize rides to 0-1 with guard against division by zero
     min_rides = zone_stats["total_rides"].min()
     max_rides = zone_stats["total_rides"].max()
-    zone_stats["safety_index"] = (zone_stats["total_rides"] - min_rides) / (max_rides - min_rides)
-    # Add zone names/borough
-    ZONE_LOOKUP_URL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
-    try:
-        lookup = pd.read_csv(ZONE_LOOKUP_URL)
+    if pd.isna(min_rides) or pd.isna(max_rides) or max_rides == min_rides:
+        zone_stats["safety_index"] = 0.5
+    else:
+        zone_stats["safety_index"] = (zone_stats["total_rides"] - min_rides) / (max_rides - min_rides)
+
+    # Add zone names/borough from cached lookup
+    lookup = get_lookup_df()
+    if lookup is not None:
         zone_stats_named = (
             zone_stats.reset_index()
-            .merge(lookup[["LocationID", "Borough", "Zone"]], left_on="PULocationID", right_on="LocationID", how="left")
-            .rename(columns={"Zone": "zone_name", "Borough": "borough"})
+            .merge(lookup, left_on="PULocationID", right_on="LocationID", how="left")
         )
         zone_stats_named = zone_stats_named[[
-            "PULocationID", "zone_name", "borough", "total_rides", "avg_distance", "avg_fare", "safety_index"
+            "PULocationID", "zone_name", "borough", "total_rides", "avg_distance", "avg_fare", "safety_index",
         ]]
-    except Exception as e:
+    else:
         zone_stats_named = zone_stats.reset_index()
+
+    with _cache_lock:
+        _data_cache[month] = {"ts": now, "df": df_night_solo, "zone_stats": zone_stats_named}
+
     return df_night_solo, zone_stats_named
 
 
