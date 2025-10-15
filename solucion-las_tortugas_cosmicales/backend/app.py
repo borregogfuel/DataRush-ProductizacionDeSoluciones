@@ -1,13 +1,19 @@
 import pandas as pd
 import json
 import numpy as np
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import joblib
 from sklearn.ensemble import RandomForestRegressor
 import os
 import sys
+from threading import Lock
+
+try:
+    from flask_compress import Compress
+except ImportError:
+    Compress = None  # Optional dependency; enable if installed
 
 # Get the absolute path of the current directory and project root
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,13 +38,14 @@ print(f"Data path: {DATA_PATH}")
 app = Flask(__name__)
 # Enable CORS for all routes
 CORS(app)
+if Compress is not None:
+    Compress(app)
 
 # ---------------- Performance: simple in-memory cache by month ----------------
-from threading import Lock
-
 CACHE_TTL_SECONDS = 60 * 30  # 30 minutes TTL; adjust as needed
 _data_cache = {}  # month -> { ts: datetime, df: DataFrame, zone_stats: DataFrame }
 _cache_lock = Lock()
+_month_locks = {}
 
 _lookup_df = None
 ZONE_LOOKUP_URL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
@@ -53,6 +60,14 @@ def get_lookup_df():
         except Exception:
             _lookup_df = None
     return _lookup_df
+
+def _get_month_lock(month: str) -> Lock:
+    with _cache_lock:
+        lock = _month_locks.get(month)
+        if lock is None:
+            lock = Lock()
+            _month_locks[month] = lock
+        return lock
 
 def get_safety_model():
     try:
@@ -122,6 +137,14 @@ def load_and_process_data(month="2023-01"):
         entry = _data_cache.get(month)
         if entry and now - entry["ts"] < timedelta(seconds=CACHE_TTL_SECONDS):
             return entry["df"], entry["zone_stats"]
+    # Serialize per-month computation to avoid duplicate downloads/work under load
+    month_lock = _get_month_lock(month)
+    with month_lock:
+        # Re-check cache inside lock to avoid duplicate work
+        with _cache_lock:
+            entry = _data_cache.get(month)
+            if entry and now - entry["ts"] < timedelta(seconds=CACHE_TTL_SECONDS):
+                return entry["df"], entry["zone_stats"]
 
     URL = f"https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{month}.parquet"
     columns = [
@@ -134,7 +157,7 @@ def load_and_process_data(month="2023-01"):
         "fare_amount",
         "payment_type",
     ]
-    df = pd.read_parquet(URL, columns=columns)
+    df = pd.read_parquet(URL, columns=columns, engine="pyarrow")
     df["tpep_pickup_datetime"] = pd.to_datetime(df["tpep_pickup_datetime"], errors="coerce")
     df["pickup_hour"] = df["tpep_pickup_datetime"].dt.hour
     df_night_solo = df[(df["pickup_hour"] >= 0) & (df["pickup_hour"] < 4) & (df["passenger_count"] == 1)]
@@ -172,6 +195,12 @@ def load_and_process_data(month="2023-01"):
     return df_night_solo, zone_stats_named
 
 
+def add_cache_headers(resp, max_age=300):
+    """Add basic Cache-Control headers for client/proxy caching."""
+    resp.headers["Cache-Control"] = f"public, max-age={max_age}"
+    return resp
+
+
 @app.route("/")
 def home():
     return "Funciona el backend ayyych uwu!"
@@ -185,32 +214,36 @@ def summary():
     _avg_fare = df_night_solo["fare_amount"].mean()
     avg_distance = None if pd.isna(_avg_distance) else float(_avg_distance)
     avg_fare = None if pd.isna(_avg_fare) else float(_avg_fare)
-    return jsonify({
+    resp = jsonify({
         "total_rides": total_rides,
         "avg_distance": avg_distance,
         "avg_fare": avg_fare
     })
+    return add_cache_headers(resp, max_age=300)
 
 @app.route("/zone-stats")
 def zone_stats_route():
     month = request.args.get("month", "2023-01")
     _, zone_stats_named = load_and_process_data(month)
     data = json.loads(zone_stats_named.to_json(orient="records"))
-    return jsonify(data)
+    resp = jsonify(data)
+    return add_cache_headers(resp, max_age=300)
 
 @app.route("/hourly-trends")
 def hourly_trends():
     month = request.args.get("month", "2023-01")
     df_night_solo, _ = load_and_process_data(month)
     hourly_counts = df_night_solo["pickup_hour"].value_counts().sort_index()
-    return jsonify(hourly_counts.to_dict())
+    resp = jsonify(hourly_counts.to_dict())
+    return add_cache_headers(resp, max_age=300)
 
 @app.route("/preview")
 def preview():
     month = request.args.get("month", "2023-01")
     df_night_solo, _ = load_and_process_data(month)
     preview_data = json.loads(df_night_solo.head(20).to_json(orient="records"))
-    return jsonify(preview_data)
+    resp = jsonify(preview_data)
+    return add_cache_headers(resp, max_age=120)
 
 @app.route("/predict-route-safety", methods=['POST'])
 def predict_route_safety():
@@ -300,6 +333,15 @@ if __name__ == "__main__":
         # Ensure model is loaded at startup
         model = get_safety_model()
         print("Model loaded successfully")
+        # Warm cache for default month in background (optional)
+        import threading
+        def _warm():
+            try:
+                load_and_process_data("2023-01")
+                print("Cache warm complete for 2023-01")
+            except Exception as e:
+                print(f"Cache warm failed: {e}")
+        threading.Thread(target=_warm, daemon=True).start()
         print("Starting the Flask server...")
         app.run(debug=True, host='0.0.0.0', port=5000)
     except Exception as e:
