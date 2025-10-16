@@ -363,6 +363,8 @@
     const API_BASE = 'http://127.0.0.1:5000';
     let map, zoneLayer, currentChart;
     let zonesData = {};
+    let zoneLayersById = {}; // Map LocationID -> Leaflet layer
+    let highlightedLayer = null;
     
     // Initialize map
     function initMap() {
@@ -394,10 +396,11 @@
         const geoResponse = await fetch('https://data.cityofnewyork.us/resource/755u-8jsi.geojson');
         const geoData = await geoResponse.json();
         
-        // Remove old layer
+        // Remove old layer and reset index
         if (zoneLayer) {
           map.removeLayer(zoneLayer);
         }
+        zoneLayersById = {};
         
         // Add zones to map
         zoneLayer = L.geoJSON(geoData, {
@@ -418,6 +421,8 @@
             const zoneId = feature.properties.locationid;
             const zoneName = feature.properties.zone;
             const borough = feature.properties.borough;
+            // Index the layer by zone ID
+            zoneLayersById[zoneId] = layer;
             
             layer.on('click', () => {
               loadZoneDetails(zoneId);
@@ -453,6 +458,25 @@
       return 'safety-low';
     }
     
+    function highlightZoneLayer(zoneId) {
+      // Reset previous highlight
+      if (highlightedLayer) {
+        highlightedLayer.setStyle({ weight: 1, color: '#334155' });
+      }
+      const layer = zoneLayersById[zoneId];
+      if (!layer) return;
+      highlightedLayer = layer;
+      layer.setStyle({ weight: 3, color: '#93c5fd' });
+      try { layer.bringToFront && layer.bringToFront(); } catch(_) {}
+      // Pan/zoom to the selected zone
+      const bounds = layer.getBounds();
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, { maxZoom: 14, padding: [20, 20] });
+      }
+      // Open popup
+      layer.openPopup();
+    }
+
     // Load zone details
     async function loadZoneDetails(zoneId) {
       showLoading(true);
@@ -466,7 +490,10 @@
         
         const data = await response.json();
         
-        // Show zone info panel
+  // Highlight on map
+  highlightZoneLayer(zoneId);
+
+  // Show zone info panel
         document.getElementById('placeholder').style.display = 'none';
         document.getElementById('zoneInfo').classList.add('active');
         
