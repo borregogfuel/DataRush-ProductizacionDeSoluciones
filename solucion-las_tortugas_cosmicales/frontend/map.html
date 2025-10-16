@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NYC Taxi Safety Map - Interactive</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a; --panel: #1e293b; --text: #e5e7eb; --muted: #9ca3af; 
+      --accent: #60a5fa; --ok: #10b981; --border: #334155;
+    }
+    * { box-sizing: border-box; }
+    html, body { 
+      margin:0; padding:0; height:100%; overflow:hidden;
+      background:var(--bg); color:var(--text); 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; 
+    }
+    
+    .container {
+      display: flex;
+      height: 100vh;
+      position: relative;
+    }
+    
+    /* Map */
+    #map {
+      flex: 1;
+      height: 100%;
+      background: #1a1a2e;
+    }
+    
+    /* Side Panel */
+    .side-panel {
+      width: 420px;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .panel-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    
+    .panel-header h1 {
+      margin: 0 0 16px 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .control-group {
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    .control-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    input, select, button {
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 14px;
+    }
+    
+    button {
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+    
+    button:hover {
+      opacity: 0.9;
+    }
+    
+    /* Zone Info */
+    .zone-info {
+      padding: 20px;
+      display: none;
+    }
+    
+    .zone-info.active {
+      display: block;
+    }
+    
+    .zone-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .zone-subtitle {
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .stat-card {
+      background: var(--bg);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    
+    .safety-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .safety-high { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .safety-medium { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .safety-low { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 24px 0 12px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+    
+    .chart-container {
+      background: var(--bg);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    
+    .recommendations {
+      background: var(--bg);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    
+    .rec-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .rec-item:last-child {
+      border-bottom: none;
+    }
+    
+    .rec-time {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 70px;
+    }
+    
+    .rec-bar {
+      flex: 1;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .rec-bar-fill {
+      height: 100%;
+      background: var(--ok);
+      border-radius: 4px;
+    }
+    
+    .placeholder {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+    
+    .placeholder-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+    
+    /* Loading */
+    .loading {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .spinner {
+      width: 56px;
+      height: 56px;
+      border: 6px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Leaflet overrides */
+    .leaflet-popup-content-wrapper {
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    
+    .leaflet-popup-content {
+      margin: 16px;
+    }
+    
+    .leaflet-popup-tip {
+      background: var(--panel);
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+      .side-panel {
+        width: 100%;
+        height: 50vh;
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+      #map {
+        height: 50vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+  </div>
+  
+  <div class="container">
+    <div id="map"></div>
+    
+    <div class="side-panel">
+      <div class="panel-header">
+        <h1>🚕 NYC Taxi Safety Index</h1>
+        <div class="controls">
+          <div class="control-group">
+            <label>Month</label>
+            <select id="month">
+              <option value="2023-01">2023-01</option>
+              <option value="2023-02">2023-02</option>
+              <option value="2023-03">2023-03</option>
+              <option value="2023-04">2023-04</option>
+              <option value="2023-05">2023-05</option>
+              <option value="2023-06">2023-06</option>
+              <option value="2023-07">2023-07</option>
+              <option value="2023-08">2023-08</option>
+              <option value="2023-09">2023-09</option>
+              <option value="2023-10">2023-10</option>
+              <option value="2023-11">2023-11</option>
+              <option value="2023-12">2023-12</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Search Zone</label>
+            <input type="text" id="searchZone" placeholder="Type zone name..." />
+          </div>
+        </div>
+      </div>
+      
+      <div class="placeholder" id="placeholder">
+        <div class="placeholder-icon">📍</div>
+        <p><strong>Click on a zone</strong> on the map<br/>to see detailed safety information</p>
+      </div>
+      
+      <div class="zone-info" id="zoneInfo">
+        <div class="zone-title" id="zoneName">Loading...</div>
+        <div class="zone-subtitle" id="zoneBorough">—</div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Safety Index</div>
+            <div class="stat-value" id="safetyIndex">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Rides</div>
+            <div class="stat-value" id="totalRides">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg Distance</div>
+            <div class="stat-value" id="avgDistance">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg Fare</div>
+            <div class="stat-value" id="avgFare">—</div>
+          </div>
+        </div>
+        
+        <div class="section-title">⏰ Safety by Hour</div>
+        <div class="chart-container">
+          <canvas id="hourlyChart" height="200"></canvas>
+        </div>
+        
+        <div class="section-title">✨ Safest Times</div>
+        <div class="recommendations" id="recommendations">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://127.0.0.1:5000';
+    let map, zoneLayer, currentChart;
+    let zonesData = {};
+    
+    // Initialize map
+    function initMap() {
+      map = L.map('map').setView([40.7128, -74.0060], 11);
+      
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap, CARTO',
+        maxZoom: 19
+      }).addTo(map);
+    }
+    
+    // Load zones and data
+    async function loadZones() {
+      showLoading(true);
+      try {
+        const month = document.getElementById('month').value;
+        
+        // Load zone stats
+        const response = await fetch(`${API_BASE}/zone-stats?month=${month}`);
+        const zones = await response.json();
+        
+        // Store for search
+        zonesData = {};
+        zones.forEach(z => {
+          zonesData[z.PULocationID] = z;
+        });
+        
+        // Load GeoJSON (NYC taxi zones)
+        const geoResponse = await fetch('https://data.cityofnewyork.us/resource/755u-8jsi.geojson');
+        const geoData = await geoResponse.json();
+        
+        // Remove old layer
+        if (zoneLayer) {
+          map.removeLayer(zoneLayer);
+        }
+        
+        // Add zones to map
+        zoneLayer = L.geoJSON(geoData, {
+          style: (feature) => {
+            const zoneId = feature.properties.locationid;
+            const zone = zonesData[zoneId];
+            const safety = zone ? zone.safety_index : 0.5;
+            
+            return {
+              fillColor: getSafetyColor(safety),
+              weight: 1,
+              opacity: 0.8,
+              color: '#334155',
+              fillOpacity: 0.6
+            };
+          },
+          onEachFeature: (feature, layer) => {
+            const zoneId = feature.properties.locationid;
+            const zoneName = feature.properties.zone;
+            const borough = feature.properties.borough;
+            
+            layer.on('click', () => {
+              loadZoneDetails(zoneId);
+            });
+            
+            layer.bindPopup(`
+              <strong>${zoneName}</strong><br/>
+              <small>${borough}</small><br/>
+              <em>Click for details</em>
+            `);
+          }
+        }).addTo(map);
+        
+      } catch (err) {
+        console.error('Error loading zones:', err);
+        alert('Failed to load zone data');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Get color for safety index
+    function getSafetyColor(safety) {
+      if (safety >= 0.7) return '#10b981'; // Green
+      if (safety >= 0.4) return '#fbbf24'; // Yellow
+      return '#ef4444'; // Red
+    }
+    
+    // Get safety badge class
+    function getSafetyClass(safety) {
+      if (safety >= 0.7) return 'safety-high';
+      if (safety >= 0.4) return 'safety-medium';
+      return 'safety-low';
+    }
+    
+    // Load zone details
+    async function loadZoneDetails(zoneId) {
+      showLoading(true);
+      try {
+        const month = document.getElementById('month').value;
+        const response = await fetch(`${API_BASE}/zone-safety/${zoneId}?month=${month}`);
+        
+        if (!response.ok) {
+          throw new Error('Zone not found');
+        }
+        
+        const data = await response.json();
+        
+        // Show zone info panel
+        document.getElementById('placeholder').style.display = 'none';
+        document.getElementById('zoneInfo').classList.add('active');
+        
+        // Populate data
+        document.getElementById('zoneName').textContent = data.zone_name;
+        document.getElementById('zoneBorough').textContent = data.borough;
+        
+        const safetyPct = Math.round(data.overall_safety_index * 100);
+        const safetyBadge = `<span class="${getSafetyClass(data.overall_safety_index)}">${safetyPct}%</span>`;
+        document.getElementById('safetyIndex').innerHTML = safetyBadge;
+        
+        document.getElementById('totalRides').textContent = data.total_rides.toLocaleString();
+        document.getElementById('avgDistance').textContent = data.avg_distance ? `${data.avg_distance.toFixed(1)} mi` : '—';
+        document.getElementById('avgFare').textContent = data.avg_fare ? `$${data.avg_fare.toFixed(2)}` : '—';
+        
+        // Hourly chart
+        renderHourlyChart(data.hourly_safety);
+        
+        // Recommendations
+        renderRecommendations(data.safest_hours);
+        
+      } catch (err) {
+        console.error('Error loading zone details:', err);
+        alert('Failed to load zone details');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Render hourly safety chart
+    function renderHourlyChart(hourlyData) {
+      if (currentChart) {
+        currentChart.destroy();
+      }
+      
+      const hours = hourlyData.map(h => `${h.pickup_hour}:00`);
+      const safetyValues = hourlyData.map(h => h.hourly_safety * 100);
+      
+      const ctx = document.getElementById('hourlyChart').getContext('2d');
+      currentChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: hours,
+          datasets: [{
+            label: 'Safety %',
+            data: safetyValues,
+            backgroundColor: safetyValues.map(v => {
+              if (v >= 70) return '#10b981';
+              if (v >= 40) return '#fbbf24';
+              return '#ef4444';
+            }),
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { 
+              grid: { color: '#334155' },
+              ticks: { color: '#9ca3af' }
+            },
+            y: { 
+              grid: { color: '#334155' },
+              ticks: { color: '#9ca3af' },
+              beginAtZero: true,
+              max: 100
+            }
+          }
+        }
+      });
+    }
+    
+    // Render recommendations
+    function renderRecommendations(safestHours) {
+      const container = document.getElementById('recommendations');
+      container.innerHTML = safestHours.map((h, i) => {
+        const hour = h.pickup_hour;
+        const safety = Math.round(h.hourly_safety * 100);
+        const timeLabel = `${hour}:00 - ${(hour + 1) % 24}:00`;
+        
+        return `
+          <div class="rec-item">
+            <div class="rec-time">${timeLabel}</div>
+            <div class="rec-bar">
+              <div class="rec-bar-fill" style="width: ${safety}%"></div>
+            </div>
+            <strong>${safety}%</strong>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Search zones
+    document.getElementById('searchZone').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      if (!query) return;
+      
+      // Find matching zone
+      const match = Object.values(zonesData).find(z => 
+        z.zone_name && z.zone_name.toLowerCase().includes(query)
+      );
+      
+      if (match) {
+        loadZoneDetails(match.PULocationID);
+      }
+    });
+    
+    // Month change
+    document.getElementById('month').addEventListener('change', () => {
+      loadZones();
+      document.getElementById('placeholder').style.display = 'block';
+      document.getElementById('zoneInfo').classList.remove('active');
+    });
+    
+    // Loading
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'flex' : 'none';
+    }
+    
+    // Initialize
+    initMap();
+    loadZones();
+  </script>
+</body>
+</html>
