@@ -362,8 +362,10 @@
   <script>
     const API_BASE = 'http://127.0.0.1:5000';
     const ZONES_URLS = [
-      'https://data.cityofnewyork.us/resource/755u-8jsi.geojson?$limit=1000',
-      'https://raw.githubusercontent.com/toddwschneider/nyc-taxi-data/master/taxi_zones.geojson'
+      // Correct NYC Open Data geospatial export endpoint (GeoJSON FeatureCollection)
+      'https://data.cityofnewyork.us/api/geospatial/755u-8jsi?method=export&format=GeoJSON',
+      // Optional local fallback (place taxi_zones.geojson next to this file)
+      'taxi_zones.geojson'
     ];
     let map, zoneLayer, currentChart;
     let zonesData = {};
@@ -475,7 +477,9 @@
           lastError = e;
         }
       }
-      throw lastError || new Error('Failed to load GeoJSON');
+  // Surface a helpful message if all sources fail
+  alert('Failed to load NYC Taxi Zones map data. If you are offline or the NYC endpoint is blocked, place a taxi_zones.geojson file next to map.html and reload.');
+  throw lastError || new Error('Failed to load GeoJSON');
     }
 
     function isValidGeoJSON(obj) {
