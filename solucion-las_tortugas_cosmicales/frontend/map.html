@@ -362,9 +362,9 @@
   <script>
     const API_BASE = 'http://127.0.0.1:5000';
     const ZONES_URLS = [
-      // Stable community mirror used in many demos (Kepler.gl dataset)
-      'https://raw.githubusercontent.com/uber-web/kepler.gl-data/master/nyctrips/data/taxi_zones.geojson',
-      // NYC Open Data geospatial export (may require availability)
+      // NYC ArcGIS FeatureServer (reliable GeoJSON output)
+      'https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Taxi_Zones/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson',
+      // NYC Open Data geospatial export (availability may vary)
       'https://data.cityofnewyork.us/api/geospatial/755u-8jsi?method=export&format=GeoJSON',
       // Optional local fallback (place taxi_zones.geojson next to this file)
       'taxi_zones.geojson'
