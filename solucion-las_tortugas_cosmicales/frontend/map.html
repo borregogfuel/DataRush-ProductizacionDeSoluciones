@@ -361,6 +361,10 @@
 
   <script>
     const API_BASE = 'http://127.0.0.1:5000';
+    const ZONES_URLS = [
+      'https://data.cityofnewyork.us/resource/755u-8jsi.geojson?$limit=1000',
+      'https://raw.githubusercontent.com/toddwschneider/nyc-taxi-data/master/taxi_zones.geojson'
+    ];
     let map, zoneLayer, currentChart;
     let zonesData = {};
     let zoneLayersById = {}; // Map LocationID -> Leaflet layer
@@ -392,9 +396,8 @@
           zonesData[z.PULocationID] = z;
         });
         
-        // Load GeoJSON (NYC taxi zones)
-        const geoResponse = await fetch('https://data.cityofnewyork.us/resource/755u-8jsi.geojson');
-        const geoData = await geoResponse.json();
+  // Load GeoJSON (NYC taxi zones) with fallback and validation
+  const geoData = await fetchZonesGeoJSON();
         
         // Remove old layer and reset index
         if (zoneLayer) {
@@ -405,8 +408,9 @@
         // Add zones to map
         zoneLayer = L.geoJSON(geoData, {
           style: (feature) => {
-            const zoneId = feature.properties.locationid;
-            const zone = zonesData[zoneId];
+            const props = feature.properties || {};
+            const zoneId = toZoneId(props);
+            const zone = zoneId != null ? zonesData[zoneId] : undefined;
             const safety = zone ? zone.safety_index : 0.5;
             
             return {
@@ -418,11 +422,14 @@
             };
           },
           onEachFeature: (feature, layer) => {
-            const zoneId = feature.properties.locationid;
-            const zoneName = feature.properties.zone;
-            const borough = feature.properties.borough;
+            const props = feature.properties || {};
+            const zoneId = toZoneId(props);
+            const zoneName = getProp(props, ['zone','Zone','name']) || `Zone ${zoneId ?? ''}`;
+            const borough = getProp(props, ['borough','Borough']) || '';
             // Index the layer by zone ID
-            zoneLayersById[zoneId] = layer;
+            if (zoneId != null) {
+              zoneLayersById[zoneId] = layer;
+            }
             
             layer.on('click', () => {
               loadZoneDetails(zoneId);
@@ -442,6 +449,50 @@
       } finally {
         showLoading(false);
       }
+    }
+
+    // Fetch GeoJSON with fallback and validation
+    async function fetchZonesGeoJSON() {
+      let lastError;
+      for (const url of ZONES_URLS) {
+        try {
+          const resp = await fetch(url);
+          const text = await resp.text();
+          try {
+            const data = JSON.parse(text);
+            if (isValidGeoJSON(data)) {
+              return data;
+            } else {
+              console.error('Invalid GeoJSON from', url, data);
+              lastError = new Error('Invalid GeoJSON');
+            }
+          } catch (e) {
+            console.error('Failed to parse JSON from', url, text.slice(0, 200));
+            lastError = e;
+          }
+        } catch (e) {
+          console.error('Fetch error for', url, e);
+          lastError = e;
+        }
+      }
+      throw lastError || new Error('Failed to load GeoJSON');
+    }
+
+    function isValidGeoJSON(obj) {
+      return obj && obj.type === 'FeatureCollection' && Array.isArray(obj.features);
+    }
+
+    function getProp(props, keys) {
+      for (const k of keys) {
+        if (props[k] != null) return props[k];
+      }
+      return undefined;
+    }
+
+    function toZoneId(props) {
+      const raw = getProp(props, ['locationid','LocationID','location_id']);
+      const id = Number(raw);
+      return Number.isFinite(id) ? id : null;
     }
     
     // Get color for safety index
