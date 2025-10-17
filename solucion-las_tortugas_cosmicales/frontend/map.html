@@ -64,6 +64,7 @@
     .control-group {
       flex: 1;
       min-width: 120px;
+      position: relative;
     }
     
     .control-group label {
@@ -83,6 +84,84 @@
       border-radius: 6px;
       padding: 10px;
       font-size: 14px;
+    }
+    
+    /* Search suggestions dropdown */
+    .suggestions-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+    }
+    
+    .suggestions-dropdown.show {
+      display: block;
+    }
+    
+    .suggestion-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+    
+    .suggestion-item:hover {
+      background: var(--hover);
+    }
+    
+    .suggestion-item.selected {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .suggestion-icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+    
+    .suggestion-text {
+      flex: 1;
+      font-size: 14px;
+    }
+    
+    .suggestion-type {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    
+    .suggestion-item.selected .suggestion-type {
+      background: rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .suggestions-section {
+      padding: 8px 16px 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: var(--hover);
     }
     
     button {
@@ -193,6 +272,97 @@
       border-bottom: none;
     }
     
+    .map-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    
+    .map-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex: 1;
+      justify-content: center;
+    }
+    
+    .map-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .map-button.google-maps {
+      background: #4285f4;
+      color: white;
+    }
+    
+    .map-button.google-maps:hover {
+      background: #3367d6;
+    }
+    
+    .map-button.apple-maps {
+      background: #007aff;
+      color: white;
+    }
+    
+    .map-button.apple-maps:hover {
+      background: #0056b3;
+    }
+    
+    .loading-indicator {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      z-index: 10000;
+      text-align: center;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .year-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      margin-top: 18px;
+    }
+    
+    .year-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+    
     .rec-time {
       font-size: 18px;
       font-weight: 700;
@@ -272,18 +442,308 @@
       background: var(--panel);
     }
     
+    /* Mobile Responsive Design */
     @media (max-width: 768px) {
       .container {
-        flex-direction: column; /* stack on mobile */
+        flex-direction: column;
+        height: 100vh;
       }
+      
+      #map {
+        height: 50vh;
+        order: 1;
+        min-height: 300px;
+      }
+      
       .side-panel {
         width: 100%;
         height: 50vh;
         border-right: none;
         border-top: 1px solid var(--border);
+        order: 2;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        min-height: 300px;
+        padding-bottom: 60px; /* Extra padding to reach Apple Maps button */
       }
-      #map {
-        height: 50vh;
+      
+      /* Collapsible panel functionality */
+      .side-panel.collapsed {
+        height: 80px; /* Increased height to accommodate new toggle button */
+        overflow: hidden;
+        padding-bottom: 0;
+      }
+      
+      .side-panel.expanded {
+        height: 80vh; /* Increased height for better scrolling */
+        max-height: calc(100vh - 20vh); /* Ensure map still has space */
+        position: relative;
+      }
+      
+      /* Scroll indicator */
+      .side-panel.expanded::after {
+        content: "Scroll for more ↓";
+        position: absolute;
+        bottom: 10px;
+        right: 16px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        pointer-events: none;
+        opacity: 0.8;
+        animation: fadeInOut 3s ease-in-out infinite;
+      }
+      
+      @keyframes fadeInOut {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 0.4; }
+      }
+      
+      .panel-header {
+        padding: 12px 16px;
+        position: sticky;
+        top: 0;
+        background: var(--bg);
+        z-index: 10;
+        border-bottom: 1px solid var(--border);
+        transition: transform 0.3s ease;
+        transform: translateY(0);
+      }
+      
+      .panel-header h1 {
+        font-size: 18px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      
+      .panel-toggle {
+        cursor: pointer;
+        user-select: none;
+        padding: 8px 12px;
+        margin: 0 0 0 12px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+      
+      .panel-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: var(--text);
+      }
+      
+      .panel-toggle::before {
+        content: "Tap to expand";
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .panel-toggle::after {
+        content: "▼";
+        font-size: 14px;
+        transition: transform 0.3s ease;
+      }
+      
+      .side-panel.expanded .panel-toggle::before {
+        content: "Tap to collapse";
+      }
+      
+      .side-panel.expanded .panel-toggle::after {
+        transform: rotate(180deg);
+      }
+      
+      /* Scrolled header styles */
+      .panel-header.scrolled {
+        transform: translateY(-100%);
+      }
+      
+      .controls {
+        flex-direction: column;
+        gap: 12px;
+        padding: 0 16px 16px;
+      }
+      
+      .year-info {
+        margin-top: 8px;
+        margin-bottom: 16px;
+      }
+      
+      .year-badge {
+        padding: 10px 20px;
+        font-size: 16px;
+      }
+      
+      .control-group {
+        width: 100%;
+      }
+      
+      .control-group input {
+        font-size: 16px;
+        padding: 12px 16px;
+        height: 48px;
+      }
+      
+      .zone-info {
+        padding: 16px;
+      }
+      
+      .zone-title {
+        font-size: 20px;
+        margin-bottom: 8px;
+      }
+      
+      .zone-subtitle {
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      
+      .stat-card {
+        padding: 16px;
+      }
+      
+      .stat-label {
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+      
+      .stat-value {
+        font-size: 24px;
+      }
+      
+      .safety-badge {
+        padding: 8px 16px;
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+      
+      .section-title {
+        font-size: 16px;
+        margin-bottom: 12px;
+      }
+      
+      .chart-container {
+        height: 200px;
+        margin-bottom: 16px;
+      }
+      
+      .recommendations {
+        margin-bottom: 16px;
+      }
+      
+      .rec-item {
+        padding: 12px;
+        margin-bottom: 8px;
+      }
+      
+      .rec-time {
+        font-size: 20px;
+        min-width: 60px;
+      }
+      
+      .rec-text {
+        font-size: 14px;
+      }
+      
+      .map-buttons {
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      
+      .map-button {
+        padding: 16px;
+        font-size: 16px;
+        height: 56px;
+      }
+      
+      .map-button svg {
+        width: 24px;
+        height: 24px;
+      }
+      
+      .loading-indicator {
+        padding: 24px 20px;
+        border-radius: 12px;
+      }
+      
+      .loading-spinner {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 20px;
+      }
+      
+      .loading-indicator div {
+        font-size: 16px;
+      }
+      
+      .loading-indicator div:last-child {
+        font-size: 14px;
+      }
+    }
+    
+    /* Extra small screens */
+    @media (max-width: 480px) {
+      .panel-header {
+        padding: 12px;
+      }
+      
+      .panel-header h1 {
+        font-size: 18px;
+      }
+      
+      .year-badge {
+        padding: 8px 16px;
+        font-size: 14px;
+      }
+      
+      .control-group input {
+        font-size: 16px;
+        padding: 14px 16px;
+        height: 52px;
+      }
+      
+      .zone-info {
+        padding: 12px;
+      }
+      
+      .zone-title {
+        font-size: 18px;
+      }
+      
+      .stat-card {
+        padding: 12px;
+      }
+      
+      .stat-value {
+        font-size: 22px;
+      }
+      
+      .chart-container {
+        height: 180px;
+      }
+      
+      .map-button {
+        padding: 14px;
+        font-size: 15px;
+        height: 52px;
       }
     }
   </style>
@@ -296,37 +756,83 @@
   <div class="container">
     <div id="map"></div>
     
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="loading-indicator">
+      <div class="loading-spinner"></div>
+      <div id="loadingMessage">Loading taxi data...</div>
+      <div id="loadingSubtext" style="font-size: 12px; margin-top: 8px; opacity: 0.8;">This may take a moment on first load</div>
+    </div>
+    
     <div class="side-panel">
       <div class="panel-header">
-        <h1>🚕 NYC Taxi Safety Index</h1>
+        <h1>🚕 NYC Taxi Safety Index <div class="panel-toggle" id="panelToggle"></div></h1>
         <div class="controls">
-          <div class="control-group">
-            <label>Month</label>
-            <select id="month">
-              <option value="2023-01">2023-01</option>
-              <option value="2023-02">2023-02</option>
-              <option value="2023-03">2023-03</option>
-              <option value="2023-04">2023-04</option>
-              <option value="2023-05">2023-05</option>
-              <option value="2023-06">2023-06</option>
-              <option value="2023-07">2023-07</option>
-              <option value="2023-08">2023-08</option>
-              <option value="2023-09">2023-09</option>
-              <option value="2023-10">2023-10</option>
-              <option value="2023-11">2023-11</option>
-              <option value="2023-12">2023-12</option>
-            </select>
+          <div class="year-info">
+            <span class="year-badge">📅 2023 Data</span>
           </div>
           <div class="control-group">
             <label>Search Zone</label>
             <input type="text" id="searchZone" placeholder="Type zone name..." />
+            <div class="suggestions-dropdown" id="suggestionsDropdown"></div>
           </div>
         </div>
       </div>
       
       <div class="placeholder" id="placeholder">
-        <div class="placeholder-icon">📍</div>
-        <p><strong>Click on a zone</strong> on the map<br/>to see detailed safety information</p>
+        <div class="placeholder-icon">🚕</div>
+        <div class="zone-title">NYC Taxi Safety Insights</div>
+        <div class="zone-subtitle">General Safety Information</div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">🌙 Night Safety</div>
+            <div class="stat-value">Most accidents occur between 10 PM - 2 AM</div>
+            <div class="safety-badge high-risk">High Risk</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-label">🌅 Morning Rush</div>
+            <div class="stat-value">Safest times: 6 AM - 9 AM</div>
+            <div class="safety-badge safe">Very Safe</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-label">🏙️ Manhattan</div>
+            <div class="stat-value">Highest traffic density</div>
+            <div class="safety-badge medium-risk">Medium Risk</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-label">✈️ Airports</div>
+            <div class="stat-value">JFK & LaGuardia: Higher fares, longer rides</div>
+            <div class="safety-badge safe">Generally Safe</div>
+          </div>
+        </div>
+        
+        <div class="section-title">💡 Safety Tips</div>
+        <div class="recommendations">
+          <div class="rec-item">
+            <div class="rec-time">🌙 Night Travel</div>
+            <div class="rec-text">Avoid traveling alone late at night, especially in outer boroughs</div>
+          </div>
+          <div class="rec-item">
+            <div class="rec-time">🚦 Rush Hours</div>
+            <div class="rec-text">Expect longer travel times during 7-9 AM and 5-7 PM</div>
+          </div>
+          <div class="rec-item">
+            <div class="rec-time">📍 Popular Areas</div>
+            <div class="rec-text">Times Square, Central Park, and tourist areas are generally safer</div>
+          </div>
+          <div class="rec-item">
+            <div class="rec-time">💰 Fare Awareness</div>
+            <div class="rec-text">Airport rides cost more but are typically safer routes</div>
+          </div>
+        </div>
+        
+        <div class="section-title">🔍 Search for Specific Areas</div>
+        <div style="text-align: center; margin: 20px 0; color: var(--muted); font-size: 14px;">
+          Type any NYC location above to see detailed safety statistics for that specific area
+        </div>
       </div>
       
       <div class="zone-info" id="zoneInfo">
@@ -361,17 +867,43 @@
         <div class="recommendations" id="recommendations">
           <!-- Populated dynamically -->
         </div>
+        
+        <div class="section-title">🗺️ Get Directions</div>
+        <div class="map-buttons">
+          <button id="openGoogleMaps" class="map-button google-maps">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            </svg>
+            Google Maps
+          </button>
+          <button id="openAppleMaps" class="map-button apple-maps">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            </svg>
+            Apple Maps
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    const API_BASE = 'http://127.0.0.1:5000';
+    // API Configuration - Auto-detect environment
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' || 
+                       window.location.hostname.includes('192.168');
+    
+    const API_BASE = isLocalhost ? 
+      'http://127.0.0.1:5000' : 
+      'http://192.168.100.51:5000'; // Use your computer's IP for mobile access
+    
+    console.log('Using API:', API_BASE);
     // ZONES_URLS removed - no longer using GeoJSON files
     let map, zoneLayer, currentChart;
     let zonesData = {};
     let zoneLayersById = {}; // Map LocationID -> Leaflet layer
     let highlightedLayer = null;
+    let currentLocation = null; // Store current location for map buttons
     
     // Initialize map
     function initMap() {
@@ -387,13 +919,44 @@
     }
     
     // Load zones and data
+    // Progressive loading functions
+    function showLoadingIndicator(message = "Loading taxi data...", subtext = "This may take a moment on first load") {
+      document.getElementById('loadingMessage').textContent = message;
+      document.getElementById('loadingSubtext').textContent = subtext;
+      document.getElementById('loadingIndicator').style.display = 'block';
+    }
+    
+    function updateLoadingMessage(message, subtext = null) {
+      document.getElementById('loadingMessage').textContent = message;
+      if (subtext) {
+        document.getElementById('loadingSubtext').textContent = subtext;
+      }
+    }
+    
+    function hideLoadingIndicator() {
+      document.getElementById('loadingIndicator').style.display = 'none';
+    }
+
     async function loadZones() {
       showLoading(true);
       try {
-        const month = document.getElementById('month').value;
+        // Automatically load all 2023 data - no month selector needed
+        const month = '2023-all';
         
-        // Load zone stats
-        const response = await fetch(`${API_BASE}/zone-stats?month=${month}`);
+        // Load zone stats with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // Reduced to 10 seconds for faster feedback
+        
+        const response = await fetch(`${API_BASE}/zone-stats?month=${month}`, {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const zones = await response.json();
         
         // Store for search (filter out Bronx Park zones)
@@ -576,7 +1139,13 @@
         
       } catch (err) {
         console.error('Error loading zones:', err);
-        alert('Failed to load zone data');
+        
+        // Show user-friendly error message
+        if (err.name === 'AbortError') {
+          alert('Loading timed out. The server may be processing data. Please try again in a moment.');
+        } else {
+          alert('Failed to load taxi data. Please refresh the page or try again later.');
+        }
       } finally {
         showLoading(false);
       }
@@ -797,7 +1366,8 @@
           return;
         }
         
-        const month = document.getElementById('month').value;
+        // Automatically load all 2023 data - no month selector needed
+        const month = '2023-all';
         const response = await fetch(`${API_BASE}/zone-safety/${zoneId}?month=${month}`);
         
         if (!response.ok) {
@@ -921,7 +1491,76 @@
     
     // Enhanced search zones with better matching and autocomplete
     let searchTimeout;
+    let hideSuggestionsTimeout;
     let searchResults = [];
+    let selectedSuggestionIndex = -1;
+    let suggestionsData = [];
+    
+    // Popular NYC locations for suggestions
+    const popularLocations = [
+      { name: "Times Square", icon: "🎭", type: "Landmark" },
+      { name: "Central Park", icon: "🌳", type: "Park" },
+      { name: "JFK Airport", icon: "✈️", type: "Airport" },
+      { name: "LaGuardia Airport", icon: "✈️", type: "Airport" },
+      { name: "Union Square", icon: "🏛️", type: "Landmark" },
+      { name: "SoHo", icon: "🛍️", type: "Neighborhood" },
+      { name: "Greenwich Village", icon: "🏘️", type: "Neighborhood" },
+      { name: "Harlem", icon: "🎵", type: "Neighborhood" },
+      { name: "Chinatown", icon: "🏮", type: "Neighborhood" },
+      { name: "Little Italy", icon: "🍝", type: "Neighborhood" },
+      { name: "Chelsea", icon: "🎨", type: "Neighborhood" },
+      { name: "Flatiron", icon: "🏢", type: "Landmark" },
+      { name: "Tribeca", icon: "🏙️", type: "Neighborhood" },
+      { name: "Financial District", icon: "💰", type: "Business" },
+      { name: "Prospect Park", icon: "🌳", type: "Park" },
+      { name: "DUMBO", icon: "🌉", type: "Neighborhood" },
+      { name: "Williamsburg", icon: "🎨", type: "Neighborhood" },
+      { name: "Brooklyn Heights", icon: "🌆", type: "Neighborhood" },
+      { name: "Park Slope", icon: "🏘️", type: "Neighborhood" },
+      { name: "Red Hook", icon: "⚓", type: "Neighborhood" },
+      { name: "Long Island City", icon: "🏭", type: "Neighborhood" },
+      { name: "Flushing", icon: "🏮", type: "Neighborhood" },
+      { name: "Jackson Heights", icon: "🌍", type: "Neighborhood" },
+      { name: "Forest Hills", icon: "🌲", type: "Neighborhood" },
+      { name: "Yankee Stadium", icon: "⚾", type: "Stadium" },
+      { name: "Melrose", icon: "🏘️", type: "Neighborhood" },
+      { name: "Fordham", icon: "🎓", type: "Neighborhood" }
+    ];
+    
+    // Recent searches storage
+    const RECENT_SEARCHES_KEY = 'nyc_taxi_recent_searches';
+    const MAX_RECENT_SEARCHES = 10;
+    
+    // Load recent searches from localStorage
+    function loadRecentSearches() {
+      try {
+        const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
+        return stored ? JSON.parse(stored) : [];
+      } catch (error) {
+        console.error('Error loading recent searches:', error);
+        return [];
+      }
+    }
+    
+    // Save recent search to localStorage
+    function saveRecentSearch(query) {
+      try {
+        let recentSearches = loadRecentSearches();
+        
+        // Remove if already exists
+        recentSearches = recentSearches.filter(item => item !== query);
+        
+        // Add to beginning
+        recentSearches.unshift(query);
+        
+        // Keep only max number
+        recentSearches = recentSearches.slice(0, MAX_RECENT_SEARCHES);
+        
+        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recentSearches));
+      } catch (error) {
+        console.error('Error saving recent search:', error);
+      }
+    }
     
     document.getElementById('searchZone').addEventListener('input', (e) => {
       const query = e.target.value.trim();
@@ -933,24 +1572,182 @@
       
       if (!query || query.length < 2) {
         clearSearchResults();
+        showWelcomeScreen(); // Show welcome screen when search is cleared
+        hideSuggestions();
         return;
       }
       
-      // Debounce the search
+      // Clear any existing hide timeout
+      if (hideSuggestionsTimeout) {
+        clearTimeout(hideSuggestionsTimeout);
+      }
+      
+      // Show suggestions as user types
+      showSuggestions(query);
+      
+      // Debounce the search - longer delay so suggestions stay visible
       searchTimeout = setTimeout(async () => {
         await performSearch(query);
-      }, 300); // Reduced debounce time for better responsiveness
+        
+        // Hide suggestions after search completes, with a delay
+        hideSuggestionsTimeout = setTimeout(() => {
+          hideSuggestions();
+        }, 2000); // Hide suggestions 2 seconds after search completes
+      }, 800); // Increased debounce time so suggestions stay visible longer
     });
+    
+    // Handle keyboard navigation in suggestions
+    document.getElementById('searchZone').addEventListener('keydown', (e) => {
+      const dropdown = document.getElementById('suggestionsDropdown');
+      const items = dropdown.querySelectorAll('.suggestion-item');
+      
+      if (!dropdown.classList.contains('show') || items.length === 0) {
+          return;
+        }
+        
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, items.length - 1);
+          updateSuggestionSelection();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+          updateSuggestionSelection();
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (selectedSuggestionIndex >= 0 && items[selectedSuggestionIndex]) {
+            const suggestionText = items[selectedSuggestionIndex].querySelector('.suggestion-text').textContent;
+            document.getElementById('searchZone').value = suggestionText;
+            hideSuggestions();
+            performSearch(suggestionText);
+          }
+          break;
+        case 'Escape':
+          hideSuggestions();
+          break;
+      }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+      const searchInput = document.getElementById('searchZone');
+      const dropdown = document.getElementById('suggestionsDropdown');
+      
+      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        hideSuggestions();
+      }
+    });
+    
+    // Show suggestions dropdown
+    function showSuggestions(query) {
+      const dropdown = document.getElementById('suggestionsDropdown');
+      const lowerQuery = query.toLowerCase();
+      
+      // Get recent searches
+      const recentSearches = loadRecentSearches();
+      
+      // Filter popular locations
+      const matchingLocations = popularLocations.filter(location => 
+        location.name.toLowerCase().includes(lowerQuery)
+      );
+      
+      // Filter recent searches
+      const matchingRecent = recentSearches.filter(search => 
+        search.toLowerCase().includes(lowerQuery) && 
+        !matchingLocations.some(loc => loc.name.toLowerCase() === search.toLowerCase())
+      );
+      
+      // Build suggestions HTML
+      let suggestionsHTML = '';
+      
+      if (matchingRecent.length > 0) {
+        suggestionsHTML += '<div class="suggestions-section">Recent Searches</div>';
+        matchingRecent.forEach(search => {
+          suggestionsHTML += `
+            <div class="suggestion-item" data-query="${search}">
+              <div class="suggestion-icon">🕒</div>
+              <div class="suggestion-text">${search}</div>
+              <div class="suggestion-type">Recent</div>
+            </div>
+          `;
+        });
+      }
+      
+      if (matchingLocations.length > 0) {
+        suggestionsHTML += '<div class="suggestions-section">Popular Locations</div>';
+        matchingLocations.forEach(location => {
+          suggestionsHTML += `
+            <div class="suggestion-item" data-query="${location.name}">
+              <div class="suggestion-icon">${location.icon}</div>
+              <div class="suggestion-text">${location.name}</div>
+              <div class="suggestion-type">${location.type}</div>
+            </div>
+          `;
+        });
+      }
+      
+      dropdown.innerHTML = suggestionsHTML;
+      dropdown.classList.add('show');
+      
+      // Add click listeners to suggestions
+      dropdown.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const query = item.dataset.query;
+          document.getElementById('searchZone').value = query;
+          hideSuggestions();
+          performSearch(query);
+        });
+      });
+      
+      selectedSuggestionIndex = -1;
+    }
+    
+    // Hide suggestions dropdown
+    function hideSuggestions() {
+      const dropdown = document.getElementById('suggestionsDropdown');
+      dropdown.classList.remove('show');
+      selectedSuggestionIndex = -1;
+    }
+    
+    // Update suggestion selection highlighting
+    function updateSuggestionSelection() {
+      const dropdown = document.getElementById('suggestionsDropdown');
+      const items = dropdown.querySelectorAll('.suggestion-item');
+      
+      items.forEach((item, index) => {
+        if (index === selectedSuggestionIndex) {
+          item.classList.add('selected');
+        } else {
+          item.classList.remove('selected');
+        }
+      });
+    }
     
     // Dual search function - separate navigation and information
     async function performSearch(query) {
       console.log('Searching for:', query);
+      
+      // Save to recent searches
+      saveRecentSearch(query);
+      
+      // Auto-expand panel on mobile when searching
+      if (window.innerWidth <= 768) {
+        const sidePanel = document.querySelector('.side-panel');
+        if (sidePanel && sidePanel.classList.contains('collapsed')) {
+          sidePanel.classList.remove('collapsed');
+          sidePanel.classList.add('expanded');
+        }
+      }
       
       // 1. ALWAYS use Leaflet for map navigation (reliable)
         try {
           const geocodeResult = await geocodeLocation(query);
           if (geocodeResult) {
           console.log('Leaflet found location:', geocodeResult);
+          currentLocation = geocodeResult; // Store for map buttons
             showLocationOnMap(geocodeResult);
         } else {
           console.log('Leaflet found no results for:', query);
@@ -980,11 +1777,11 @@
       const lowerQuery = query.toLowerCase();
       
       // Try exact matches first
-      let match = Object.values(zonesData).find(z => 
+        let match = Object.values(zonesData).find(z => 
         z.zone_name && z.zone_name.toLowerCase() === lowerQuery
-      );
-      
-      if (match) {
+        );
+        
+        if (match) {
         console.log('Exact backend match:', match.zone_name);
         return match;
       }
@@ -1009,6 +1806,18 @@
       return null;
     }
     
+    // Show welcome screen with general safety information
+    function showWelcomeScreen() {
+      console.log('Showing welcome screen');
+      
+      // Show placeholder and hide zone info
+      document.getElementById('placeholder').style.display = 'block';
+      document.getElementById('zoneInfo').classList.remove('active');
+      
+      // Clear any map popups
+      map.closePopup();
+    }
+    
     // Show backend zone information
     async function showBackendInfo(zoneData) {
       console.log('Showing backend info for:', zoneData.zone_name);
@@ -1031,7 +1840,8 @@
       
       // Fetch hourly safety data from backend
       try {
-        const month = document.getElementById('month').value;
+        // Automatically load all 2023 data - no month selector needed
+        const month = '2023-all';
         const response = await fetch(`${API_BASE}/zone-safety/${zoneData.PULocationID}?month=${month}`);
         
         if (response.ok) {
@@ -1052,8 +1862,8 @@
           }));
           renderHourlyChart(mockHourlyData);
           renderRecommendations([8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
-        }
-      } catch (error) {
+          }
+        } catch (error) {
         console.error('Error fetching hourly data:', error);
         // Fallback to mock data
         const mockHourlyData = Array.from({length: 24}, (_, i) => ({
@@ -1389,16 +2199,130 @@
     }
     
     // Month change
-    document.getElementById('month').addEventListener('change', () => {
-      loadZones();
-      document.getElementById('placeholder').style.display = 'block';
-      document.getElementById('zoneInfo').classList.remove('active');
+    // Month selector removed - automatically loading all 2023 data
+    
+    // Map button event listeners
+    document.getElementById('openGoogleMaps').addEventListener('click', () => {
+      openInGoogleMaps();
+    });
+    
+    document.getElementById('openAppleMaps').addEventListener('click', () => {
+      openInAppleMaps();
     });
     
     // Loading
     function showLoading(show) {
       document.getElementById('loading').style.display = show ? 'flex' : 'none';
     }
+    
+    // Open location in Google Maps
+    function openInGoogleMaps() {
+      if (!currentLocation) {
+        alert('No location selected');
+        return;
+      }
+      
+      const { lat, lng, name } = currentLocation;
+      const query = encodeURIComponent(name);
+      const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
+      
+      // Try to open in app first, fallback to web
+      const appUrl = `comgooglemaps://?q=${query}`;
+      
+      // Check if we can open the app
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = appUrl;
+      document.body.appendChild(iframe);
+      
+      // Fallback to web after a short delay
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        window.open(url, '_blank');
+      }, 1000);
+    }
+    
+    // Open location in Apple Maps
+    function openInAppleMaps() {
+      if (!currentLocation) {
+        alert('No location selected');
+        return;
+      }
+      
+      const { lat, lng, name } = currentLocation;
+      const query = encodeURIComponent(name);
+      
+      // Try to open in Apple Maps app first
+      const appUrl = `maps://?q=${query}`;
+      
+      // Check if we can open the app
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = appUrl;
+      document.body.appendChild(iframe);
+      
+      // Fallback to web Apple Maps
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        const webUrl = `https://maps.apple.com/?q=${query}`;
+        window.open(webUrl, '_blank');
+      }, 1000);
+    }
+    
+    // Mobile panel toggle functionality
+    function initializeMobilePanel() {
+      if (window.innerWidth <= 768) {
+        const sidePanel = document.querySelector('.side-panel');
+        const panelToggle = document.getElementById('panelToggle');
+        const panelHeader = document.querySelector('.panel-header');
+        
+        if (sidePanel && panelToggle) {
+          // Start collapsed on mobile
+          sidePanel.classList.add('collapsed');
+          
+          // Toggle on toggle button click only
+          panelToggle.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            if (sidePanel.classList.contains('collapsed')) {
+              sidePanel.classList.remove('collapsed');
+              sidePanel.classList.add('expanded');
+            } else {
+              sidePanel.classList.remove('expanded');
+              sidePanel.classList.add('collapsed');
+            }
+          });
+          
+          // Add scroll detection for sliding header
+          if (panelHeader) {
+            let lastScrollTop = 0;
+            sidePanel.addEventListener('scroll', () => {
+              const currentScrollTop = sidePanel.scrollTop;
+              
+              // Show header when scrolling up (even slightly)
+              if (currentScrollTop < lastScrollTop && currentScrollTop < 100) {
+                panelHeader.classList.remove('scrolled');
+              }
+              // Hide header when scrolling down
+              else if (currentScrollTop > lastScrollTop && currentScrollTop > 10) {
+                panelHeader.classList.add('scrolled');
+              }
+              
+              lastScrollTop = currentScrollTop;
+            });
+          }
+        }
+      }
+    }
+    
+    // Initialize mobile panel when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeMobilePanel();
+    });
+    
+    // Re-initialize on window resize
+    window.addEventListener('resize', () => {
+      initializeMobilePanel();
+    });
     
     // Initialize
     initMap();
