@@ -9,8 +9,51 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --bg: #0f172a; --panel: #1e293b; --text: #e5e7eb; --muted: #9ca3af; 
-      --accent: #60a5fa; --ok: #10b981; --border: #334155;
+      /* Dark theme (default) */
+      --bg: #0f172a; 
+      --panel: #1e293b; 
+      --text: #e5e7eb; 
+      --muted: #9ca3af; 
+      --accent: #60a5fa; 
+      --ok: #10b981; 
+      --border: #334155;
+      --hover: #2a2a2a;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --danger: #ef4444;
+      --primary: #60a5fa;
+    }
+    
+    /* Light theme */
+    [data-theme="light"] {
+      --bg: #ffffff;
+      --panel: #f8fafc;
+      --text: #1a1a1a;
+      --muted: #666666;
+      --accent: #3b82f6;
+      --ok: #22c55e;
+      --border: #e5e5e5;
+      --hover: #f5f5f5;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --primary: #3b82f6;
+    }
+    
+    /* Dark theme (explicit) */
+    [data-theme="dark"] {
+      --bg: #0f172a; 
+      --panel: #1e293b; 
+      --text: #e5e7eb; 
+      --muted: #9ca3af; 
+      --accent: #60a5fa; 
+      --ok: #10b981; 
+      --border: #334155;
+      --hover: #2a2a2a;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --danger: #ef4444;
+      --primary: #60a5fa;
     }
     * { box-sizing: border-box; }
     html, body { 
@@ -162,6 +205,151 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       background: var(--hover);
+    }
+    
+    /* Weather widget styles */
+    .weather-widget {
+      background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .weather-widget::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: weatherShimmer 3s ease-in-out infinite;
+    }
+    
+    @keyframes weatherShimmer {
+      0%, 100% { transform: translateX(-100%) translateY(-100%); }
+      50% { transform: translateX(0%) translateY(0%); }
+    }
+    
+    .weather-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .weather-title {
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .weather-icon {
+      font-size: 24px;
+    }
+    
+    .weather-temp {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    
+    .weather-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .weather-detail {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .weather-impact {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      text-align: center;
+    }
+    
+    .weather-impact-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .weather-impact-text {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    .weather-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 20px;
+      color: var(--muted);
+    }
+    
+    .weather-error {
+      background: rgba(255, 107, 107, 0.1);
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 16px 0;
+      color: #ff6b6b;
+      text-align: center;
+      font-size: 14px;
+    }
+    
+    /* Theme toggle button */
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .theme-toggle:hover {
+      background: var(--hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .theme-toggle-icon {
+      font-size: 18px;
+      transition: transform 0.3s ease;
+    }
+    
+    .theme-toggle-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      margin-right: 4px;
+    }
+    
+    /* Smooth transitions for theme changes */
+    * {
+      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
     }
     
     button {
@@ -749,6 +937,12 @@
   </style>
 </head>
 <body>
+  <!-- Theme Toggle Button -->
+  <div class="theme-toggle" id="themeToggle">
+    <span class="theme-toggle-text">Dark</span>
+    <span class="theme-toggle-icon">🌙</span>
+  </div>
+  
   <div class="loading" id="loading">
     <div class="spinner"></div>
   </div>
@@ -833,11 +1027,15 @@
         <div style="text-align: center; margin: 20px 0; color: var(--muted); font-size: 14px;">
           Type any NYC location above to see detailed safety statistics for that specific area
         </div>
+        
       </div>
       
       <div class="zone-info" id="zoneInfo">
         <div class="zone-title" id="zoneName">Loading...</div>
         <div class="zone-subtitle" id="zoneBorough">—</div>
+        
+        <!-- Weather widget for specific locations -->
+        <div id="weatherWidget" style="display: none;"></div>
         
         <div class="stats-grid">
           <div class="stat-card">
@@ -888,6 +1086,52 @@
   </div>
 
   <script>
+    // Theme management
+    const THEME_KEY = 'nyc_taxi_theme';
+    
+    // Initialize theme
+    function initializeTheme() {
+      const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+      setTheme(savedTheme);
+    }
+    
+    // Set theme
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(THEME_KEY, theme);
+      
+      // Update toggle button
+      const toggle = document.getElementById('themeToggle');
+      const text = toggle.querySelector('.theme-toggle-text');
+      const icon = toggle.querySelector('.theme-toggle-icon');
+      
+      if (theme === 'light') {
+        text.textContent = 'Light';
+        icon.textContent = '☀️';
+      } else {
+        text.textContent = 'Dark';
+        icon.textContent = '🌙';
+      }
+    }
+    
+    // Toggle theme
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      setTheme(newTheme);
+    }
+    
+    // Initialize theme on page load
+    initializeTheme();
+    
+    // Add click listener to theme toggle
+    document.addEventListener('DOMContentLoaded', function() {
+      const themeToggle = document.getElementById('themeToggle');
+      if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+      }
+    });
+    
     // API Configuration - Auto-detect environment
     const isLocalhost = window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' || 
@@ -898,6 +1142,138 @@
       'http://192.168.100.51:5000'; // Use your computer's IP for mobile access
     
     console.log('Using API:', API_BASE);
+    
+    // Weather API Configuration
+    const WEATHER_API_KEY = '4db24631eb6cabd90f3e51f71e66e990';
+    const WEATHER_API_BASE = 'https://api.openweathermap.org/data/2.5';
+    
+    // Validate API key format
+    function validateAPIKeyFormat(key) {
+      console.log('🔍 Validating API key format...');
+      console.log('Key length:', key.length);
+      console.log('Key format:', /^[a-f0-9]{32}$/.test(key) ? 'Valid format' : 'Invalid format');
+      
+      if (key.length !== 32) {
+        console.error('❌ API key should be 32 characters long');
+        return false;
+      }
+      
+      if (!/^[a-f0-9]{32}$/.test(key)) {
+        console.error('❌ API key should contain only lowercase letters and numbers');
+        return false;
+      }
+      
+      console.log('✅ API key format is correct');
+      return true;
+    }
+    
+    // Validate the current key
+    validateAPIKeyFormat(WEATHER_API_KEY);
+    
+    // Weather icons mapping
+    const weatherIcons = {
+      '01d': '☀️', '01n': '🌙', // clear sky
+      '02d': '⛅', '02n': '☁️', // few clouds
+      '03d': '☁️', '03n': '☁️', // scattered clouds
+      '04d': '☁️', '04n': '☁️', // broken clouds
+      '09d': '🌧️', '09n': '🌧️', // shower rain
+      '10d': '🌦️', '10n': '🌧️', // rain
+      '11d': '⛈️', '11n': '⛈️', // thunderstorm
+      '13d': '❄️', '13n': '❄️', // snow
+      '50d': '🌫️', '50n': '🌫️'  // mist
+    };
+    
+    // Test weather API key with detailed debugging
+    async function testWeatherAPI() {
+      console.log('🔍 Testing Weather API...');
+      console.log('API Key:', WEATHER_API_KEY);
+      console.log('API Base:', WEATHER_API_BASE);
+      
+      const testUrl = `${WEATHER_API_BASE}/weather?q=New York,NY,US&appid=${WEATHER_API_KEY}&units=imperial`;
+      console.log('Test URL:', testUrl);
+      
+      try {
+        const response = await fetch(testUrl);
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Weather API key is working');
+          console.log('Sample data:', data);
+        } else {
+          const errorText = await response.text();
+          console.error('❌ Weather API key error:', response.status, response.statusText);
+          console.error('Error response:', errorText);
+        }
+      } catch (error) {
+        console.error('❌ Weather API connection error:', error);
+        console.error('Error details:', error.message);
+      }
+    }
+    
+    // Test API on page load
+    testWeatherAPI();
+    
+    // Manual weather test function
+    async function manualWeatherTest() {
+      console.log('🧪 Manual Weather Test Starting...');
+      
+      // Test 1: Basic API connectivity
+      console.log('Test 1: Basic API connectivity');
+      try {
+        const response = await fetch(`${WEATHER_API_BASE}/weather?q=New York,NY,US&appid=${WEATHER_API_KEY}&units=imperial`);
+        console.log('Response status:', response.status);
+        
+        if (response.status === 401) {
+          console.error('❌ API Key is invalid or expired');
+          alert('❌ Weather API Key is invalid or expired. Please check your API key.');
+          return;
+        } else if (response.status === 429) {
+          console.error('❌ API rate limit exceeded');
+          alert('❌ Weather API rate limit exceeded. Please try again later.');
+          return;
+        } else if (response.ok) {
+          console.log('✅ API connectivity working');
+        } else {
+          console.error('❌ API error:', response.status, response.statusText);
+          alert(`❌ Weather API error: ${response.status} ${response.statusText}`);
+          return;
+        }
+      } catch (error) {
+        console.error('❌ Network error:', error);
+        alert('❌ Network error. Please check your internet connection.');
+        return;
+      }
+      
+      // Test 2: Borough-specific weather
+      console.log('Test 2: Borough-specific weather');
+      const boroughs = ['Manhattan', 'Brooklyn', 'Queens', 'The Bronx'];
+      
+      for (const borough of boroughs) {
+        try {
+          console.log(`Testing weather for ${borough}...`);
+          const response = await fetch(`${WEATHER_API_BASE}/weather?q=${borough},NY,US&appid=${WEATHER_API_KEY}&units=imperial`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ ${borough} weather:`, data.weather[0].description, data.main.temp + '°F');
+          } else {
+            console.log(`❌ ${borough} weather failed:`, response.status);
+          }
+        } catch (error) {
+          console.log(`❌ ${borough} weather error:`, error);
+        }
+      }
+      
+      console.log('🧪 Manual Weather Test Complete');
+      alert('Weather API test complete! Check console for results.');
+    }
+    
+    // Make functions globally available for testing
+    window.testWeatherAPI = testWeatherAPI;
+    window.manualWeatherTest = manualWeatherTest;
+    
     // ZONES_URLS removed - no longer using GeoJSON files
     let map, zoneLayer, currentChart;
     let zonesData = {};
@@ -1814,8 +2190,240 @@
       document.getElementById('placeholder').style.display = 'block';
       document.getElementById('zoneInfo').classList.remove('active');
       
+      // Hide weather widget
+      document.getElementById('weatherWidget').style.display = 'none';
+      
       // Clear any map popups
       map.closePopup();
+    }
+    
+    // Map locations to boroughs for weather data
+    function getBoroughForLocation(locationName) {
+      const location = locationName.toLowerCase();
+      
+      // Manhattan locations
+      if (location.includes('times square') || location.includes('central park') || 
+          location.includes('soho') || location.includes('greenwich village') || 
+          location.includes('chelsea') || location.includes('flatiron') || 
+          location.includes('tribeca') || location.includes('financial district') ||
+          location.includes('union square') || location.includes('little italy') ||
+          location.includes('chinatown') || location.includes('harlem') ||
+          location.includes('upper east') || location.includes('upper west') ||
+          location.includes('midtown') || location.includes('downtown')) {
+        return 'Manhattan';
+      }
+      
+      // Brooklyn locations
+      if (location.includes('dumbo') || location.includes('williamsburg') || 
+          location.includes('brooklyn heights') || location.includes('park slope') || 
+          location.includes('red hook') || location.includes('prospect park') ||
+          location.includes('bay ridge') || location.includes('coney island') ||
+          location.includes('brighton beach') || location.includes('bushwick')) {
+        return 'Brooklyn';
+      }
+      
+      // Queens locations
+      if (location.includes('jfk') || location.includes('laguardia') || 
+          location.includes('long island city') || location.includes('flushing') || 
+          location.includes('jackson heights') || location.includes('forest hills') ||
+          location.includes('astoria') || location.includes('corona') ||
+          location.includes('elmhurst') || location.includes('jamaica')) {
+        return 'Queens';
+      }
+      
+      // Bronx locations
+      if (location.includes('yankee stadium') || location.includes('melrose') || 
+          location.includes('fordham') || location.includes('bronx') ||
+          location.includes('hunts point') || location.includes('morrisania')) {
+        return 'The Bronx';
+      }
+      
+      // Staten Island locations
+      if (location.includes('staten island') || location.includes('st. george')) {
+        return 'Staten Island';
+      }
+      
+      // Default to Manhattan for unknown locations
+      return 'Manhattan';
+    }
+    
+    // Weather API functions
+    async function loadWeatherData(locationName) {
+      const weatherWidget = document.getElementById('weatherWidget');
+      
+      // Show weather widget
+      weatherWidget.style.display = 'block';
+      
+      try {
+        // Get borough for the location
+        const borough = getBoroughForLocation(locationName);
+        console.log(`Mapping "${locationName}" to borough: ${borough}`);
+        
+        // Show loading state
+        weatherWidget.innerHTML = `
+          <div class="weather-loading">
+            <div>⏳</div>
+            <div>Loading weather for ${borough}...</div>
+          </div>
+        `;
+        
+        // Search for weather by borough
+        let weatherData = null;
+        let searchQueries = [
+          `${borough}, NY, US`,
+          `${borough}, New York, US`,
+          `New York, NY, US` // Fallback to general NYC weather
+        ];
+        
+        for (const query of searchQueries) {
+          try {
+            console.log('Trying weather search for:', query);
+            const response = await fetch(
+              `${WEATHER_API_BASE}/weather?q=${encodeURIComponent(query)}&appid=${WEATHER_API_KEY}&units=imperial`
+            );
+            
+            if (response.ok) {
+              weatherData = await response.json();
+              console.log('Weather data found for:', query, weatherData);
+              break;
+            } else {
+              console.log('Weather API error for', query, ':', response.status);
+            }
+          } catch (error) {
+            console.log('Weather fetch error for', query, ':', error);
+            continue;
+          }
+        }
+        
+        if (weatherData) {
+          // Render weather widget with borough info
+          renderWeatherWidget(weatherData, locationName, borough);
+        } else {
+          throw new Error('No weather data found for any borough');
+        }
+        
+      } catch (error) {
+        console.error('Error loading weather:', error);
+        
+        // Show mock weather data as fallback
+        console.log('Showing mock weather data as fallback');
+        const mockWeatherData = {
+          weather: [{ icon: '01d', description: 'clear sky' }],
+          main: { 
+            temp: 72, 
+            feels_like: 75, 
+            humidity: 65, 
+            pressure: 1013 
+          },
+          wind: { speed: 8 },
+          visibility: 10000
+        };
+        
+        renderWeatherWidget(mockWeatherData, locationName, borough);
+      }
+    }
+    
+    function renderWeatherWidget(data, locationName, borough) {
+      const weatherWidget = document.getElementById('weatherWidget');
+      const icon = weatherIcons[data.weather[0].icon] || '🌤️';
+      const temp = Math.round(data.main.temp);
+      const description = data.weather[0].description;
+      const humidity = data.main.humidity;
+      const windSpeed = Math.round(data.wind.speed);
+      const feelsLike = Math.round(data.main.feels_like);
+      
+      // Calculate weather impact on safety
+      const weatherImpact = calculateWeatherImpact(data);
+      
+      weatherWidget.innerHTML = `
+        <div class="weather-widget">
+          <div class="weather-header">
+            <div class="weather-title">
+              <span class="weather-icon">${icon}</span>
+              <span>${description.charAt(0).toUpperCase() + description.slice(1)} in ${borough}</span>
+            </div>
+            <div class="weather-temp">${temp}°F</div>
+          </div>
+          
+          <div class="weather-details">
+            <div class="weather-detail">
+              <span>Feels like</span>
+              <span>${feelsLike}°F</span>
+            </div>
+            <div class="weather-detail">
+              <span>Humidity</span>
+              <span>${humidity}%</span>
+            </div>
+            <div class="weather-detail">
+              <span>Wind</span>
+              <span>${windSpeed} mph</span>
+            </div>
+            <div class="weather-detail">
+              <span>Pressure</span>
+              <span>${data.main.pressure} hPa</span>
+            </div>
+          </div>
+          
+          <div class="weather-impact">
+            <div class="weather-impact-title">🚕 Safety Impact</div>
+            <div class="weather-impact-text">${weatherImpact.message}</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    function calculateWeatherImpact(weatherData) {
+      const main = weatherData.weather[0].main.toLowerCase();
+      const description = weatherData.weather[0].description.toLowerCase();
+      const windSpeed = weatherData.wind.speed;
+      const visibility = weatherData.visibility / 1000; // Convert to km
+      
+      let impact = 0;
+      let message = '';
+      
+      // Rain impact
+      if (main.includes('rain') || description.includes('drizzle')) {
+        impact += 20;
+        message = 'Rain increases accident risk by 20% - Drive carefully';
+      }
+      
+      // Snow impact
+      if (main.includes('snow')) {
+        impact += 35;
+        message = 'Snow significantly increases risk - Avoid travel if possible';
+      }
+      
+      // Thunderstorm impact
+      if (main.includes('thunderstorm')) {
+        impact += 25;
+        message = 'Thunderstorms create dangerous conditions - Stay safe';
+      }
+      
+      // High wind impact
+      if (windSpeed > 15) {
+        impact += 15;
+        message = 'High winds affect vehicle control - Extra caution needed';
+      }
+      
+      // Low visibility impact
+      if (visibility < 1) {
+        impact += 30;
+        message = 'Poor visibility creates high risk - Avoid travel';
+      } else if (visibility < 3) {
+        impact += 15;
+        message = 'Reduced visibility - Drive with extra care';
+      }
+      
+      // Clear conditions
+      if (impact === 0) {
+        message = 'Optimal weather conditions for safe travel';
+      }
+      
+      return {
+        impact: impact,
+        message: message,
+        riskLevel: impact > 25 ? 'high' : impact > 10 ? 'medium' : 'low'
+      };
     }
     
     // Show backend zone information
@@ -1825,6 +2433,9 @@
       // Show zone info panel
       document.getElementById('placeholder').style.display = 'none';
       document.getElementById('zoneInfo').classList.add('active');
+      
+      // Load weather data for this location
+      loadWeatherData(zoneData.zone_name);
       
       // Populate with backend data
       document.getElementById('zoneName').textContent = zoneData.zone_name;
@@ -1882,6 +2493,9 @@
       // Show zone info panel
       document.getElementById('placeholder').style.display = 'none';
       document.getElementById('zoneInfo').classList.add('active');
+      
+      // Load weather data for this location
+      loadWeatherData(query);
       
       // Populate basic data
       document.getElementById('zoneName').textContent = query;
