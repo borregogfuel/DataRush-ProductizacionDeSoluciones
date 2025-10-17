@@ -155,6 +155,24 @@ def load_and_process_data(month="2023-01"):
         zone_stats_named = zone_stats_named[[
             "PULocationID", "zone_name", "borough", "total_rides", "avg_distance", "avg_fare", "safety_index",
         ]]
+        
+        # Filter out problematic zones that create oversized rectangles
+        problematic_zones = ['Bronx Park', 'Bronx Park South', 'Bronx Park North']
+        zone_stats_named = zone_stats_named[
+            ~zone_stats_named['zone_name'].isin(problematic_zones)
+        ]
+        
+        # Also filter zone hour stats to exclude problematic zones
+        if lookup is not None:
+            zone_hour_stats_named = zone_hour_stats.merge(
+                lookup, left_on="PULocationID", right_on="LocationID", how="left"
+            )
+            zone_hour_stats = zone_hour_stats_named[
+                ~zone_hour_stats_named['zone_name'].isin(problematic_zones)
+            ][["PULocationID", "pickup_hour", "rides", "avg_distance", "avg_fare", "hourly_safety"]]
+        
+        print(f"Filtered out problematic zones. Remaining zones: {len(zone_stats_named)}")
+        
     else:
         zone_stats_named = zone_stats.reset_index()
 
