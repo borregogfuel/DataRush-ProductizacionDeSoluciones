@@ -1,0 +1,44 @@
+# Configuración del proyecto NYC Taxi ML
+
+data:
+  parquet_path: "solucion-las_tortugas_cosmicales/ML/parquet_data"
+  location_mapping: "solucion-las_tortugas_cosmicales/ML/LocationID_to_pretinct.csv"
+  crime_data: "solucion-las_tortugas_cosmicales/ML/crime_data/NYPD_Complaint_Data_Historic_20251015.csv"
+
+models:
+  test_days: 30  # Días para split temporal de test
+  random_state: 42
+  
+  # Pesos para fórmula de safety index
+  safety_weights:
+    crime: 0.6      # Peso del crimen (inverso)
+    tip: 0.2        # Peso del porcentaje de propina
+    frequency: 0.2  # Peso de la frecuencia de viajes
+  
+  # Parámetros de crimen
+  crime_weights:
+    felony: 2.0
+    misdemeanor: 1.2
+    violation: 1.0
+  
+  # Ventanas temporales para agregación de crimen
+  crime_windows:
+    hours_24: 24
+    days_7: 168  # 7 días en horas
+  
+  # Parámetros de modelos
+  lightgbm_params:
+    objective: "regression"
+    metric: "rmse"
+    boosting_type: "gbdt"
+    num_leaves: 31
+    learning_rate: 0.05
+    feature_fraction: 0.9
+    bagging_fraction: 0.8
+    bagging_freq: 5
+    verbose: -1
+    early_stopping_rounds: 50
+
+paths:
+  models_dir: "models"
+  logs_dir: "logs"

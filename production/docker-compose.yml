@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  nyc_taxi_ml_api:
+    build:
+      context: ..
+      dockerfile: production/Dockerfile
+    ports:
+      - "5001:5001"
+    volumes:
+      # Montar datos locales para desarrollo
+      - ../solucion-las_tortugas_cosmicales/ML/data:/opt/nyc_taxi_ml/data:ro
+      - ../models:/opt/nyc_taxi_ml/models:ro
+      # Montar logs para debugging
+      - ./logs:/opt/nyc_taxi_ml/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Servicio opcional para monitoreo
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - nyc_taxi_ml_api
+    restart: unless-stopped
+
+networks:
+  default:
+    name: nyc_taxi_ml_network

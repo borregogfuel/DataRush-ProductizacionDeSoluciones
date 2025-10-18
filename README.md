@@ -1,53 +1,103 @@
-# DataRush: Productización de Soluciones
+# NYC Taxi ML Models - AVG FARE & SAFETY INDEX
 
-<p align="center">
-  <img width="525" height="303" alt="Screenshot 2025-10-07 at 10 26 07" src="https://github.com/user-attachments/assets/503da566-882f-46ae-9041-3f4f57407df4" />
-</p>
+Este proyecto entrena dos modelos de machine learning para predecir el precio promedio de viajes y el índice de seguridad en NYC usando datos de taxis y crimen.
 
-### Objetivo
-Aplicar EDA y visualización/algoritmos para detectar patrones en **viajes de taxi y limosina en Nueva York (NYC)** y traducirlos en **recomendaciones accionables** listas para producto (MVPs, dashboards o scripts reutilizables).
+## Modelos
 
-- **Datos**: se consumen **directo desde la nube** (AWS Open Data): https://registry.opendata.aws/nyc-tlc-trip-records-pds/
+- **AVG FARE**: Predice el precio promedio de un viaje entre dos zonas
+- **SAFETY INDEX**: Predice el índice de seguridad (0-100%) basado en datos de crimen y patrones de viaje
 
----
+## Estructura del Proyecto
 
-## Estructura del repositorio
 ```
-reto/
-│
-├── README.md                 # uso del repositorio
-└── solucion-equipo/         # entregables por equipo (en su propia carpeta)
+├── README.md
+├── requirements.txt
+├── config.yaml
+├── src/
+│   ├── __init__.py
+│   ├── ingest.py          # Lectura de datos parquet y CSV
+│   ├── features.py        # Ingeniería de características
+│   ├── labeling.py        # Generación de etiquetas de seguridad
+│   ├── models.py          # Entrenamiento de modelos
+│   ├── pipeline.py        # Pipeline principal
+│   ├── inference.py       # Predicciones en tiempo real
+│   └── evaluation.py      # Métricas y evaluación
+├── notebooks/
+│   └── exploration.ipynb  # Análisis exploratorio
+├── tests/
+│   ├── __init__.py
+│   ├── test_ingest.py
+│   ├── test_features.py
+│   └── test_inference.py
+└── data/
+    ├── parquet_data/      # Datos de taxis (parquet)
+    ├── LocationID_to_pretinct.csv
+    └── NYPD_Complaint_Data_Historic_20251015.csv
 ```
----
 
-## Reglas de colaboración
-1. Cada equipo debe hacer _fork_ de este repositorio
-2. Dentro del fork, crear su carpeta  con el formato:  
-   `solucion-<nombre_equipo>`
-3. Subir todos sus archivos únicamente dentro de su carpeta de equipo.
-4. No modifiques la rama `main` del repo original. Trabaja en tu fork.
----
+## Instalación
 
-## Flujo de trabajo (equipos)
-1) Hacer fork desde GitHub  
-2) Clonar el fork en local:
 ```bash
-git clone https://github.com/<tu_usuario>/<tu_fork>.git
-cd <tu_fork>
+pip install -r requirements.txt
 ```
-3) **Crear la carpeta del equipo** y agregar contenido:
+
+## Configuración
+
+Edita `config.yaml` para especificar rutas de datos:
+
+```yaml
+data:
+  parquet_path: "solucion-las_tortugas_cosmicales/ML/parquet_data"
+  location_mapping: "solucion-las_tortugas_cosmicales/ML/LocationID_to_pretinct.csv"
+  crime_data: "solucion-las_tortugas_cosmicales/ML/crime_data/NYPD_Complaint_Data_Historic_20251015.csv"
+
+models:
+  test_days: 30  # Días para test temporal
+  safety_weights:
+    crime: 0.6
+    tip: 0.2
+    frequency: 0.2
+```
+
+## Uso
+
+### Entrenar modelos
+
 ```bash
-mkdir -p solucion-<nombre_equipo> # puedes añadir notebooks, scripts, dashboards exportables y un README propio.
+python -m src.pipeline train
 ```
-4) **Commit & push** a tu fork:
+
+### Hacer predicciones
+
 ```bash
-git add .
-git commit -m "Inicial: solucion-<nombre_equipo>"
-git push origin main
+python -m src.inference predict --pu 74 --do 151 --dt "2025-10-16 18:30:00"
 ```
 
----
+### Ejecutar tests
 
+```bash
+python -m pytest tests/
+```
 
-¡Éxito en el reto! 💡  
-— Data Science Club at Tec
+## Datos Requeridos
+
+- **Parquet files**: Datos de taxis NYC (yellow, green, fhv, fhvhv)
+- **LocationID_to_pretinct.csv**: Mapeo de zonas a precincts
+- **NYPD_Complaint_Data_Historic_20251015.csv**: Datos de crimen
+
+## Fórmula Safety Index
+
+```
+safety_raw = 0.6*(1 - crime_norm) + 0.2*tip_pct_norm + 0.2*trip_freq_norm
+```
+
+Donde:
+- `crime_norm`: Crimen normalizado por precinct y ventana temporal
+- `tip_pct_norm`: Porcentaje de propina normalizado
+- `trip_freq_norm`: Frecuencia de viajes normalizada
+
+## Modelos
+
+- **LightGBM** con early stopping
+- **Split temporal**: Últimos 30 días para test
+- **Features**: Hora, día, distancia, crimen histórico, patrones de viaje

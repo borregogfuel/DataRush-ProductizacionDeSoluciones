@@ -1,0 +1,45 @@
+# Archivos grandes que no se deben subir a GitHub
+solucion-las_tortugas_cosmicales/ML/parquet_data/
+*.parquet
+*.pkl
+*.csv
+*.log
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Archivos de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Archivos de configuración local
+.env
+config.local.yaml
+
+# Archivos de backup
+*.bak
+*.backup
+*.old
+
+# Archivos de logs
+logs/
+*.log
+
+# Archivos de datos grandes
+data/
+models/
+cache/
+backups/
+
+# Archivos no versionados del repositorio raíz
+presentation_script.md
+project_documentation.md
