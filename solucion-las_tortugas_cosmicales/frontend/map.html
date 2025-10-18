@@ -1356,15 +1356,15 @@
                        window.location.hostname === '127.0.0.1' || 
                        window.location.hostname.includes('192.168');
     
-            // ML API Configuration
-            const ML_API_BASE = isLocalhost ? 
-              'http://127.0.0.1:5002' : 
-              'http://192.168.100.51:5002'; // ML API en puerto 5002
+    // ML API Configuration
+    const ML_API_BASE = isLocalhost ? 
+      'http://127.0.0.1:5002' : 
+      'http://13.221.81.218:5002'; // ML API en puerto 5002
     
     // Backend API Configuration (existente)
     const API_BASE = isLocalhost ? 
       'http://127.0.0.1:5000' : 
-      'http://192.168.100.51:5000'; // Backend existente en puerto 5000
+      'http://13.221.81.218:5000'; // Backend existente en puerto 5000
     
     console.log('Using ML API:', ML_API_BASE);
     console.log('Using Backend API:', API_BASE);
