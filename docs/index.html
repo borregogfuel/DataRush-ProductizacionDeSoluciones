@@ -1356,13 +1356,15 @@
                        window.location.hostname === '127.0.0.1' || 
                        window.location.hostname.includes('192.168');
     
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    
     // ML API Configuration
-    const ML_API_BASE = isLocalhost ? 
+    const ML_API_BASE = (isLocalhost && !isGitHubPages) ? 
       'http://127.0.0.1:5002' : 
       'http://13.221.81.218:5002'; // ML API en puerto 5002
     
     // Backend API Configuration (existente)
-    const API_BASE = isLocalhost ? 
+    const API_BASE = (isLocalhost && !isGitHubPages) ? 
       'http://127.0.0.1:5000' : 
       'http://13.221.81.218:5000'; // Backend existente en puerto 5000
     
@@ -1479,6 +1481,12 @@
     async function getMLPrediction(pickupLocation, dropoffLocation, pickupDateTime = null) {
       console.log('🤖 Obteniendo predicción ML...');
       console.log('Pickup:', pickupLocation, 'Dropoff:', dropoffLocation);
+      
+      // Si estamos en GitHub Pages, usar siempre datos de fallback
+      if (isGitHubPages) {
+        console.log('🌐 GitHub Pages detectado - usando datos de ejemplo');
+        return getFallbackMLData(pickupLocation, dropoffLocation);
+      }
       
       try {
         // Convert location names to LocationIDs
@@ -1654,6 +1662,12 @@
     // Función para probar ML API
     async function testMLAPI() {
       console.log('🧪 Probando ML API...');
+      
+      // Si estamos en GitHub Pages, no hacer pruebas HTTP
+      if (isGitHubPages) {
+        console.log('🌐 GitHub Pages detectado - saltando pruebas HTTP');
+        return true;
+      }
       
       try {
         // Test 1: Health check
@@ -1882,6 +1896,17 @@
 
     async function loadZones() {
       showLoading(true);
+      
+      // Si estamos en GitHub Pages, usar siempre datos de fallback
+      if (isGitHubPages) {
+        console.log('🌐 GitHub Pages detectado - usando datos de ejemplo del backend');
+        const fallbackZones = getFallbackBackendData();
+        zonesData = fallbackZones;
+        console.log('Backend fallback zones loaded:', Object.keys(zonesData).length);
+        showLoading(false);
+        return;
+      }
+      
       try {
         // Automatically load all 2023 data - no month selector needed
         const month = '2023-all';
