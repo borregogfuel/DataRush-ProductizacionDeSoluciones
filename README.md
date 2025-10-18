@@ -1,103 +1,97 @@
 # NYC Taxi ML Models - AVG FARE & SAFETY INDEX
 
-Este proyecto entrena dos modelos de machine learning para predecir el precio promedio de viajes y el índice de seguridad en NYC usando datos de taxis y crimen.
+Este repositorio contiene la versión finalizada del proyecto de productización: modelos, código backend, frontend y artefactos de despliegue.
 
-## Modelos
+Última actualización: entrega final fusionada en `main` (incluye datos de ejemplo y guía de despliegue).
 
-- **AVG FARE**: Predice el precio promedio de un viaje entre dos zonas
-- **SAFETY INDEX**: Predice el índice de seguridad (0-100%) basado en datos de crimen y patrones de viaje
+Enlaces rápidos
+- GitHub Pages (frontend público): https://borregogfuel.github.io/DataRush-ProductizacionDeSoluciones/
+- Video final (entrega): https://drive.google.com/drive/folders/184xXN4EKyNklBfooxUAnJOPT8vzCevBh?usp=sharing
 
-## Estructura del Proyecto
+Resumen de componentes añadidos
+- Frontend: `solucion-las_tortugas_cosmicales/frontend/map.html` (deployable via GitHub Pages)
+- Backend/Production: `production/api/app.py`, scripts en `production/scripts/` y `production/Dockerfile`
+- Data de ejemplo y mapeos: `solucion-las_tortugas_cosmicales/ML/`
+- Documentación de despliegue: `DEPLOYMENT_GUIDE_SECURE.md`, `EC2_DEPLOYMENT_GUIDE.md`
 
-```
-├── README.md
-├── requirements.txt
-├── config.yaml
-├── src/
-│   ├── __init__.py
-│   ├── ingest.py          # Lectura de datos parquet y CSV
-│   ├── features.py        # Ingeniería de características
-│   ├── labeling.py        # Generación de etiquetas de seguridad
-│   ├── models.py          # Entrenamiento de modelos
-│   ├── pipeline.py        # Pipeline principal
-│   ├── inference.py       # Predicciones en tiempo real
-│   └── evaluation.py      # Métricas y evaluación
-├── notebooks/
-│   └── exploration.ipynb  # Análisis exploratorio
-├── tests/
-│   ├── __init__.py
-│   ├── test_ingest.py
-│   ├── test_features.py
-│   └── test_inference.py
-└── data/
-    ├── parquet_data/      # Datos de taxis (parquet)
-    ├── LocationID_to_pretinct.csv
-    └── NYPD_Complaint_Data_Historic_20251015.csv
-```
+Instalación rápida
 
-## Instalación
-
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
-## Configuración
-
-Edita `config.yaml` para especificar rutas de datos:
+Configuración (rutas importantes)
 
 ```yaml
 data:
   parquet_path: "solucion-las_tortugas_cosmicales/ML/parquet_data"
   location_mapping: "solucion-las_tortugas_cosmicales/ML/LocationID_to_pretinct.csv"
   crime_data: "solucion-las_tortugas_cosmicales/ML/crime_data/NYPD_Complaint_Data_Historic_20251015.csv"
-
-models:
-  test_days: 30  # Días para test temporal
-  safety_weights:
-    crime: 0.6
-    tip: 0.2
-    frequency: 0.2
 ```
 
-## Uso
+Uso rápido
 
-### Entrenar modelos
+- Ejecutar backend de producción (local):
+  - Construir imagen Docker (desde `production/`):
+    ```powershell
+    cd production
+    docker build -t datarush-production .
+    docker run -p 8000:8000 datarush-production
+    ```
+- Ejecutar frontend local (abrir `solucion-las_tortugas_cosmicales/frontend/map.html` en navegador)
+- Ejecutar pruebas:
+  ```powershell
+  python -m pytest
+  ```
 
-```bash
-python -m src.pipeline train
+Entrega y notas importantes
+
+- Se ha añadido un CSV histórico de incidentes (`NYPD_Complaint_Data_Historic_20251015.csv`) como datos de muestra para reproducibilidad. Estos archivos son grandes — si necesitas que los quite del repo para reducir tamaño, dímelo y lo gestionamos con herramienta de historial (`git-filter-repo` o BFG).
+- Se creó `aaVideoFinal/videofinal.txt` con el enlace al material final.
+
+Contacto y entrega
+
+Si quieres que prepare un tag o release para la entrega final, puedo crear `v1.0` y pushearlo ahora.
+
+---
+
+## Estructura del Proyecto (técnico)
+
+```
+├── README.md
+├── requirements.txt
+├── config.yaml
+├── solucion-las_tortugas_cosmicales/
+│   ├── frontend/
+│   │   └── map.html
+│   ├── backend/
+│   │   └── app.py
+│   └── ML/
+│       ├── parquet_data/
+│       └── LocationID_to_pretinct.csv
+├── production/
+│   ├── api/
+│   │   └── app.py
+│   ├── Dockerfile
+│   └── scripts/
+└── docs/
 ```
 
-### Hacer predicciones
+## Notas técnicas
 
-```bash
-python -m src.inference predict --pu 74 --do 151 --dt "2025-10-16 18:30:00"
-```
+- Modelos: LightGBM con split temporal. Parámetros y rutas en `config.yaml`.
+- Para reproducir entrenamientos usar los scripts en `solucion-las_tortugas_cosmicales/` o `production/ml_engine/`.
 
-### Ejecutar tests
+### Fórmula Safety Index (resumen)
 
-```bash
-python -m pytest tests/
-```
+La fórmula usada (resumen):
 
-## Datos Requeridos
+$$
+safety\_raw = 0.6\cdot(1 - crime\_norm) + 0.2\cdot tip\_pct\_norm + 0.2\cdot trip\_freq\_norm
+$$
 
-- **Parquet files**: Datos de taxis NYC (yellow, green, fhv, fhvhv)
-- **LocationID_to_pretinct.csv**: Mapeo de zonas a precincts
-- **NYPD_Complaint_Data_Historic_20251015.csv**: Datos de crimen
+Donde las normalizaciones se realizan por precinct y ventana temporal.
 
-## Fórmula Safety Index
+---
 
-```
-safety_raw = 0.6*(1 - crime_norm) + 0.2*tip_pct_norm + 0.2*trip_freq_norm
-```
-
-Donde:
-- `crime_norm`: Crimen normalizado por precinct y ventana temporal
-- `tip_pct_norm`: Porcentaje de propina normalizado
-- `trip_freq_norm`: Frecuencia de viajes normalizada
-
-## Modelos
-
-- **LightGBM** con early stopping
-- **Split temporal**: Últimos 30 días para test
-- **Features**: Hora, día, distancia, crimen histórico, patrones de viaje
+Si quieres que empuje este cambio a `main` ahora (commit + push), lo hago y creo un tag `v1.0` si lo confirmas.
