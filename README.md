@@ -82,16 +82,4 @@ Si quieres que prepare un tag o release para la entrega final, puedo crear `v1.0
 - Modelos: LightGBM con split temporal. Parámetros y rutas en `config.yaml`.
 - Para reproducir entrenamientos usar los scripts en `solucion-las_tortugas_cosmicales/` o `production/ml_engine/`.
 
-### Fórmula Safety Index (resumen)
-
-La fórmula usada (resumen):
-
-$$
-safety\_raw = 0.6\cdot(1 - crime\_norm) + 0.2\cdot tip\_pct\_norm + 0.2\cdot trip\_freq\_norm
-$$
-
-Donde las normalizaciones se realizan por precinct y ventana temporal.
-
----
-
 Si quieres que empuje este cambio a `main` ahora (commit + push), lo hago y creo un tag `v1.0` si lo confirmas.
