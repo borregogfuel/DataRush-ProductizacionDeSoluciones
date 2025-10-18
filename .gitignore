@@ -39,3 +39,7 @@ data/
 models/
 cache/
 backups/
+
+# Archivos no versionados del repositorio raíz
+presentation_script.md
+project_documentation.md
