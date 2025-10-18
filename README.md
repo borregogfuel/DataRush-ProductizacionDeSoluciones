@@ -77,9 +77,4 @@ Si quieres que prepare un tag o release para la entrega final, puedo crear `v1.0
 └── docs/
 ```
 
-## Notas técnicas
 
-- Modelos: LightGBM con split temporal. Parámetros y rutas en `config.yaml`.
-- Para reproducir entrenamientos usar los scripts en `solucion-las_tortugas_cosmicales/` o `production/ml_engine/`.
-
-Si quieres que empuje este cambio a `main` ahora (commit + push), lo hago y creo un tag `v1.0` si lo confirmas.
