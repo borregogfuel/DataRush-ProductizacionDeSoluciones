@@ -1488,6 +1488,32 @@
         return getFallbackMLData(pickupLocation, dropoffLocation);
       }
       
+      // Si estamos en localhost, intentar usar ML API local primero
+      if (isLocalhost) {
+        console.log('🏠 Localhost detectado - intentando ML API local');
+        try {
+          const localResponse = await fetch('http://127.0.0.1:5002/predict', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              pickup_location_id: parseMLLocation(pickupLocation),
+              dropoff_location_id: parseMLLocation(dropoffLocation),
+              pickup_datetime: pickupDateTime || new Date().toISOString()
+            })
+          });
+          
+          if (localResponse.ok) {
+            const data = await localResponse.json();
+            console.log('✅ ML API local funcionando:', data);
+            return data;
+          }
+        } catch (error) {
+          console.log('⚠️ ML API local no disponible, usando datos de ejemplo');
+        }
+      }
+      
       try {
         // Convert location names to LocationIDs
         const pickupId = parseMLLocation(pickupLocation);
@@ -1905,6 +1931,32 @@
         console.log('Backend fallback zones loaded:', Object.keys(zonesData).length);
         showLoading(false);
         return;
+      }
+      
+      // Si estamos en localhost, intentar usar backend local primero
+      if (isLocalhost) {
+        console.log('🏠 Localhost detectado - intentando backend local');
+        try {
+          const localResponse = await fetch('http://127.0.0.1:5000/zone-stats?month=2023-all');
+          if (localResponse.ok) {
+            const zones = await localResponse.json();
+            console.log('✅ Backend local funcionando:', zones.length, 'zonas');
+            
+            // Store for search (filter out Bronx Park zones)
+            zonesData = {};
+            zones.forEach(z => {
+              if (z.zone_name && !z.zone_name.toLowerCase().includes('bronx park') && z.PULocationID !== 21) {
+                zonesData[z.PULocationID] = z;
+              }
+            });
+            
+            console.log('Backend local zones loaded:', Object.keys(zonesData).length);
+            showLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.log('⚠️ Backend local no disponible, usando datos de ejemplo');
+        }
       }
       
       try {
