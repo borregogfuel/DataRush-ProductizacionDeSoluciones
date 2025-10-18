@@ -1697,64 +1697,150 @@
     function getFallbackBackendData() {
       console.log('📊 Generando datos de ejemplo del backend...');
       
-      const fallbackZones = {
-        74: {
-          PULocationID: 74,
-          zone_name: 'Central Park',
-          borough: 'Manhattan',
-          safety_index: 0.87,
-          total_rides: 15420,
-          avg_distance: 2.3,
-          avg_fare: 18.50
-        },
-        75: {
-          PULocationID: 75,
-          zone_name: 'Times Square',
-          borough: 'Manhattan',
-          safety_index: 0.75,
-          total_rides: 28450,
-          avg_distance: 1.8,
-          avg_fare: 22.30
-        },
-        76: {
-          PULocationID: 76,
-          zone_name: 'Brooklyn Bridge',
-          borough: 'Brooklyn',
-          safety_index: 0.82,
-          total_rides: 12300,
-          avg_distance: 3.1,
-          avg_fare: 25.80
-        },
-        77: {
-          PULocationID: 77,
-          zone_name: 'Chinatown',
-          borough: 'Manhattan',
-          safety_index: 0.87,
-          total_rides: 18750,
-          avg_distance: 2.1,
-          avg_fare: 16.90
-        },
-        78: {
-          PULocationID: 78,
-          zone_name: 'Queens Plaza',
-          borough: 'Queens',
-          safety_index: 0.85,
-          total_rides: 9650,
-          avg_distance: 4.2,
-          avg_fare: 28.40
-        },
-        79: {
-          PULocationID: 79,
-          zone_name: 'Bronx Zoo',
-          borough: 'Bronx',
-          safety_index: 0.78,
-          total_rides: 4200,
-          avg_distance: 5.8,
-          avg_fare: 32.10
+      // Función para generar datos de zona basados en ubicación
+      function generateZoneData(zoneId, zoneName, borough) {
+        // Calcular índice de seguridad basado en ubicación
+        let safetyIndex = 0.75; // Default
+        
+        const locationLower = zoneName.toLowerCase();
+        
+        // Aeropuertos - baja seguridad
+        if (locationLower.includes('airport') || locationLower.includes('jfk') || 
+            locationLower.includes('lga') || locationLower.includes('ewr')) {
+          safetyIndex = 0.43;
         }
+        // Zonas menos seguras
+        else if (locationLower.includes('harlem') || locationLower.includes('bronx') ||
+                 locationLower.includes('east new york') || locationLower.includes('bedford-stuyvesant')) {
+          safetyIndex = 0.65;
+        }
+        // Zonas muy seguras
+        else if (locationLower.includes('upper east') || locationLower.includes('upper west') ||
+                 locationLower.includes('financial') || locationLower.includes('wall street')) {
+          safetyIndex = 0.92;
+        }
+        // Zonas seguras
+        else if (locationLower.includes('central park') || locationLower.includes('greenwich village') ||
+                 locationLower.includes('soho') || locationLower.includes('downtown')) {
+          safetyIndex = 0.87;
+        }
+        // Por borough
+        else if (locationLower.includes('manhattan')) safetyIndex = 0.82;
+        else if (locationLower.includes('brooklyn')) safetyIndex = 0.75;
+        else if (locationLower.includes('queens')) safetyIndex = 0.78;
+        else if (locationLower.includes('bronx')) safetyIndex = 0.65;
+        else if (locationLower.includes('staten island')) safetyIndex = 0.85;
+        
+        // Calcular otros datos basados en seguridad
+        const totalRides = Math.floor(safetyIndex * 30000) + 5000; // Más seguro = más viajes
+        const avgDistance = safetyIndex > 0.8 ? 1.5 + Math.random() : 2.0 + Math.random() * 2;
+        const avgFare = safetyIndex > 0.8 ? 15 + Math.random() * 10 : 20 + Math.random() * 15;
+        
+        return {
+          PULocationID: zoneId,
+          zone_name: zoneName,
+          borough: borough,
+          safety_index: safetyIndex,
+          total_rides: totalRides,
+          avg_distance: avgDistance,
+          avg_fare: avgFare
+        };
+      }
+      
+      // Generar datos para ubicaciones comunes
+      const fallbackZones = {
+        74: generateZoneData(74, 'Central Park', 'Manhattan'),
+        75: generateZoneData(75, 'Times Square', 'Manhattan'),
+        76: generateZoneData(76, 'Brooklyn Bridge', 'Brooklyn'),
+        77: generateZoneData(77, 'Chinatown', 'Manhattan'),
+        78: generateZoneData(78, 'Queens Plaza', 'Queens'),
+        79: generateZoneData(79, 'Bronx Zoo', 'Bronx'),
+        80: generateZoneData(80, 'JFK Airport', 'Queens'),
+        81: generateZoneData(81, 'LaGuardia Airport', 'Queens'),
+        82: generateZoneData(82, 'Wall Street', 'Manhattan'),
+        83: generateZoneData(83, 'Upper East Side', 'Manhattan'),
+        84: generateZoneData(84, 'Harlem', 'Manhattan'),
+        85: generateZoneData(85, 'SoHo', 'Manhattan'),
+        86: generateZoneData(86, 'Greenwich Village', 'Manhattan'),
+        87: generateZoneData(87, 'Financial District', 'Manhattan'),
+        88: generateZoneData(88, 'Midtown', 'Manhattan'),
+        89: generateZoneData(89, 'Downtown', 'Manhattan'),
+        90: generateZoneData(90, 'East Village', 'Manhattan')
       };
       
       return fallbackZones;
+    }
+    
+    // Función para obtener datos de zona dinámicamente
+    function getZoneDataForLocation(locationName) {
+      const locationLower = locationName.toLowerCase();
+      
+      // Buscar en datos existentes
+      for (const [zoneId, zoneData] of Object.entries(zonesData)) {
+        if (zoneData.zone_name && zoneData.zone_name.toLowerCase().includes(locationLower)) {
+          return zoneData;
+        }
+      }
+      
+      // Si no se encuentra, generar datos dinámicamente
+      const zoneId = Math.floor(Math.random() * 100) + 100; // ID único
+      let borough = 'Manhattan'; // Default
+      
+      if (locationLower.includes('brooklyn')) borough = 'Brooklyn';
+      else if (locationLower.includes('queens')) borough = 'Queens';
+      else if (locationLower.includes('bronx')) borough = 'Bronx';
+      else if (locationLower.includes('staten island')) borough = 'Staten Island';
+      
+      return generateZoneData(zoneId, locationName, borough);
+    }
+    
+    // Función auxiliar para generar datos de zona
+    function generateZoneData(zoneId, zoneName, borough) {
+      let safetyIndex = 0.75; // Default
+      
+      const locationLower = zoneName.toLowerCase();
+      
+      // Aeropuertos - baja seguridad
+      if (locationLower.includes('airport') || locationLower.includes('jfk') || 
+          locationLower.includes('lga') || locationLower.includes('ewr')) {
+        safetyIndex = 0.43;
+      }
+      // Zonas menos seguras
+      else if (locationLower.includes('harlem') || locationLower.includes('bronx') ||
+               locationLower.includes('east new york') || locationLower.includes('bedford-stuyvesant')) {
+        safetyIndex = 0.65;
+      }
+      // Zonas muy seguras
+      else if (locationLower.includes('upper east') || locationLower.includes('upper west') ||
+               locationLower.includes('financial') || locationLower.includes('wall street')) {
+        safetyIndex = 0.92;
+      }
+      // Zonas seguras
+      else if (locationLower.includes('central park') || locationLower.includes('greenwich village') ||
+               locationLower.includes('soho') || locationLower.includes('downtown')) {
+        safetyIndex = 0.87;
+      }
+      // Por borough
+      else if (locationLower.includes('manhattan')) safetyIndex = 0.82;
+      else if (locationLower.includes('brooklyn')) safetyIndex = 0.75;
+      else if (locationLower.includes('queens')) safetyIndex = 0.78;
+      else if (locationLower.includes('bronx')) safetyIndex = 0.65;
+      else if (locationLower.includes('staten island')) safetyIndex = 0.85;
+      
+      // Calcular otros datos basados en seguridad
+      const totalRides = Math.floor(safetyIndex * 30000) + 5000; // Más seguro = más viajes
+      const avgDistance = safetyIndex > 0.8 ? 1.5 + Math.random() : 2.0 + Math.random() * 2;
+      const avgFare = safetyIndex > 0.8 ? 15 + Math.random() * 10 : 20 + Math.random() * 15;
+      
+      return {
+        PULocationID: zoneId,
+        zone_name: zoneName,
+        borough: borough,
+        safety_index: safetyIndex,
+        total_rides: totalRides,
+        avg_distance: avgDistance,
+        avg_fare: avgFare
+      };
     }
     
     // Función para probar ML API
@@ -2553,9 +2639,12 @@
     function getFallbackZoneDetails(zoneId) {
       console.log('📊 Generando detalles de ejemplo para zona:', zoneId);
       
-      const zoneData = zonesData[zoneId];
+      let zoneData = zonesData[zoneId];
+      
+      // Si no existe en zonesData, generar datos dinámicamente
       if (!zoneData) {
-        return null;
+        console.log('⚠️ Zona no encontrada en datos, generando dinámicamente');
+        zoneData = generateZoneData(zoneId, `Zone ${zoneId}`, 'Manhattan');
       }
       
       // Generar datos horarios
