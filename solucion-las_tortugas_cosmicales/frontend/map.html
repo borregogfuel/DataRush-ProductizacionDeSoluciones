@@ -934,6 +934,225 @@
         height: 52px;
       }
     }
+    
+    /* ===== ML API STYLES ===== */
+    .ml-results {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .ml-results h3 {
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .ml-metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .ml-metric:last-child {
+      border-bottom: none;
+    }
+    
+    .metric-label {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .metric-value {
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .metric-value.safety-high {
+      color: var(--success);
+    }
+    
+    .metric-value.safety-medium {
+      color: var(--warning);
+    }
+    
+    .metric-value.safety-low {
+      color: var(--danger);
+    }
+    
+    .safest-times {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .time-badge {
+      background: var(--accent);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .time-recommendation {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--hover);
+      border-radius: 8px;
+      margin: 4px 0;
+    }
+    
+    .time-label {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .safety-score {
+      color: var(--success);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .ml-loading {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0;
+      text-align: center;
+      color: var(--text);
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .ml-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--danger);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0;
+      text-align: center;
+      color: var(--danger);
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .ml-button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .ml-button:hover {
+      background: var(--primary);
+      transform: translateY(-1px);
+    }
+    
+    .ml-button:disabled {
+      background: var(--muted);
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .ml-section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0;
+    }
+    
+    .ml-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .ml-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .ml-input-group label {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .ml-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+    
+    .ml-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    .ml-input::placeholder {
+      color: var(--muted);
+    }
+    
+    /* Responsive ML styles */
+    @media (max-width: 768px) {
+      .ml-results {
+        padding: 16px;
+        margin: 12px 0;
+      }
+      
+      .ml-results h3 {
+        font-size: 16px;
+      }
+      
+      .ml-metric {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      
+      .safest-times {
+        flex-direction: column;
+      }
+      
+      .time-badge {
+        text-align: center;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1137,11 +1356,18 @@
                        window.location.hostname === '127.0.0.1' || 
                        window.location.hostname.includes('192.168');
     
+            // ML API Configuration
+            const ML_API_BASE = isLocalhost ? 
+              'http://127.0.0.1:5002' : 
+              'http://192.168.100.51:5002'; // ML API en puerto 5002
+    
+    // Backend API Configuration (existente)
     const API_BASE = isLocalhost ? 
       'http://127.0.0.1:5000' : 
-      'http://192.168.100.51:5000'; // Use your computer's IP for mobile access
+      'http://192.168.100.51:5000'; // Backend existente en puerto 5000
     
-    console.log('Using API:', API_BASE);
+    console.log('Using ML API:', ML_API_BASE);
+    console.log('Using Backend API:', API_BASE);
     
     // Weather API Configuration
     const WEATHER_API_KEY = '4db24631eb6cabd90f3e51f71e66e990';
@@ -1214,6 +1440,212 @@
     
     // Test API on page load
     testWeatherAPI();
+    
+    // ===== ML API FUNCTIONS =====
+    
+    // Mapeo de ubicaciones para ML
+    const ML_LOCATION_MAPPING = {
+      "central park": 74, "times square": 151, "empire state building": 114, "wall street": 90,
+      "brooklyn bridge": 1, "statue of liberty": 87, "manhattan": 74, "soho": 100,
+      "greenwich village": 100, "upper east side": 74, "upper west side": 74, "midtown": 151,
+      "financial district": 90, "chelsea": 100, "tribeca": 90, "little italy": 90,
+      "chinatown": 90, "east village": 100, "west village": 100, "harlem": 74,
+      "brooklyn": 1, "downtown brooklyn": 1, "williamsburg": 1, "park slope": 1, 
+      "coney island": 1, "prospect park": 1, "dumbo": 1, "red hook": 1,
+      "queens": 138, "astoria": 138, "flushing": 138, "long island city": 138,
+      "jamaica": 138, "corona": 138, "elmhurst": 138,
+      "bronx": 1, "yankee stadium": 1, "fordham": 1,
+      "staten island": 1, "st. george": 1,
+      "jfk airport": 132, "lga airport": 138, "jfk": 132, "laguardia": 138,
+      "newark airport": 1, "ewr": 1,
+    };
+    
+    // Función para convertir ubicación a LocationID
+    function parseMLLocation(locationInput) {
+      try {
+        const locationId = parseInt(locationInput);
+        if (locationId >= 1 && locationId <= 264) {
+          return locationId;
+        }
+      } catch (e) {
+        // No es un número, buscar en el mapeo
+      }
+      
+      const locationLower = locationInput.toLowerCase().trim();
+      return ML_LOCATION_MAPPING[locationLower] || 74; // Central Park como fallback
+    }
+    
+    // Función para obtener predicción ML
+    async function getMLPrediction(pickupLocation, dropoffLocation, pickupDateTime = null) {
+      console.log('🤖 Obteniendo predicción ML...');
+      console.log('Pickup:', pickupLocation, 'Dropoff:', dropoffLocation);
+      
+      try {
+        // Convert location names to LocationIDs
+        const pickupId = parseMLLocation(pickupLocation);
+        const dropoffId = parseMLLocation(dropoffLocation);
+        
+        const payload = {
+          pickup_location: pickupId,
+          dropoff_location: dropoffId,
+          pickup_datetime: pickupDateTime || new Date().toISOString().slice(0, 19).replace('T', ' ')
+        };
+        
+        console.log('ML API Payload:', payload);
+        
+        const response = await fetch(`${ML_API_BASE}/predict`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`ML API error: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Predicción ML obtenida:', data);
+        
+        return data;
+        
+      } catch (error) {
+        console.error('❌ Error obteniendo predicción ML:', error);
+        return { status: 'error', error: error.message };
+      }
+    }
+    
+    // Función para probar ML API
+    async function testMLAPI() {
+      console.log('🧪 Probando ML API...');
+      
+      try {
+        // Test 1: Health check
+        const healthResponse = await fetch(`${ML_API_BASE}/health`);
+        if (healthResponse.ok) {
+          const healthData = await healthResponse.json();
+          console.log('✅ ML API Health Check:', healthData);
+        } else {
+          console.error('❌ ML API Health Check failed:', healthResponse.status);
+          return false;
+        }
+        
+        // Test 2: Locations
+        const locationsResponse = await fetch(`${ML_API_BASE}/locations`);
+        if (locationsResponse.ok) {
+          const locationsData = await locationsResponse.json();
+          console.log('✅ ML API Locations:', locationsData);
+        } else {
+          console.error('❌ ML API Locations failed:', locationsResponse.status);
+        }
+        
+        // Test 3: Prediction
+        const prediction = await getMLPrediction("Central Park", "Times Square");
+        if (prediction && prediction.status === 'success') {
+          console.log('✅ ML API Prediction Test:', prediction);
+          return true;
+        } else {
+          console.error('❌ ML API Prediction Test failed');
+          return false;
+        }
+        
+      } catch (error) {
+        console.error('❌ ML API Test Error:', error);
+        return false;
+      }
+    }
+    
+    // Función para mostrar predicción ML en la UI
+    function displayMLPrediction(prediction) {
+      if (!prediction || prediction.status !== 'success') {
+        console.error('Predicción ML inválida:', prediction);
+        return;
+      }
+      
+      const pred = prediction.prediction;
+      
+      // Actualizar elementos de la UI si existen
+      const safetyElement = document.getElementById('mlSafetyIndex');
+      const fareElement = document.getElementById('mlAvgFare');
+      const timesElement = document.getElementById('mlSafestTimes');
+      
+      if (safetyElement) {
+        safetyElement.innerHTML = `<span class="safety-high">${pred.safety_index_percent}%</span>`;
+      }
+      
+      if (fareElement) {
+        fareElement.textContent = `$${pred.avg_fare_usd}`;
+      }
+      
+      if (timesElement && pred.safest_times) {
+        timesElement.innerHTML = pred.safest_times.map(time => 
+          `<div class="time-recommendation">
+            <span class="time-label">${time.time_label}</span>
+            <span class="safety-score">${time.safety_percent}%</span>
+          </div>`
+        ).join('');
+      }
+      
+      console.log('🎯 Predicción ML mostrada en UI');
+    }
+    
+    // Función para integrar ML con búsqueda de ubicaciones
+    async function searchWithML(pickupLocation, dropoffLocation) {
+      console.log('🔍 Búsqueda con ML:', pickupLocation, '→', dropoffLocation);
+      
+      // Mostrar loading
+      const mlResultsDiv = document.getElementById('mlResults');
+      if (mlResultsDiv) {
+        mlResultsDiv.innerHTML = '<div class="ml-loading">🤖 Analizando con ML...</div>';
+      }
+      
+      // Obtener predicción ML
+      const prediction = await getMLPrediction(pickupLocation, dropoffLocation);
+      
+      if (prediction) {
+        displayMLPrediction(prediction);
+        
+        // Mostrar resultados en UI
+        if (mlResultsDiv) {
+          mlResultsDiv.innerHTML = `
+            <div class="ml-results">
+              <h3>🤖 Predicción ML</h3>
+              <div class="ml-metric">
+                <span class="metric-label">Índice de Seguridad:</span>
+                <span class="metric-value safety-${prediction.prediction.safety_index_percent >= 70 ? 'high' : prediction.prediction.safety_index_percent >= 50 ? 'medium' : 'low'}">${prediction.prediction.safety_index_percent}%</span>
+              </div>
+              <div class="ml-metric">
+                <span class="metric-label">Tarifa Promedio:</span>
+                <span class="metric-value">$${prediction.prediction.avg_fare_usd}</span>
+              </div>
+              <div class="ml-metric">
+                <span class="metric-label">Horas Más Seguras:</span>
+                <div class="safest-times">
+                  ${prediction.prediction.safest_times.map(time => 
+                    `<span class="time-badge">${time.time_label} (${time.safety_percent}%)</span>`
+                  ).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        // Mostrar error
+        if (mlResultsDiv) {
+          mlResultsDiv.innerHTML = '<div class="ml-error">❌ Error obteniendo predicción ML</div>';
+        }
+      }
+    }
+    
+    // Hacer funciones disponibles globalmente
+    window.getMLPrediction = getMLPrediction;
+    window.testMLAPI = testMLAPI;
+    window.searchWithML = searchWithML;
+    window.parseMLLocation = parseMLLocation;
+    
+    // Probar ML API al cargar la página
+    testMLAPI();
     
     // Manual weather test function
     async function manualWeatherTest() {
@@ -2132,20 +2564,215 @@
         console.error('Leaflet geocoding error:', error);
       }
       
-      // 2. SEPARATELY try to find backend data for information
+      // 2. HYBRID: Use backend for zone data + ML for safety/fare
       try {
         const backendData = await findBackendData(query);
         if (backendData) {
           console.log('Backend found data:', backendData.zone_name);
-          showBackendInfo(backendData);
+          await showHybridInfo(backendData, query);
         } else {
-          console.log('No backend data found, showing basic info');
+          console.log('No backend data found, using ML only');
+          await showMLInfo(query);
+        }
+      } catch (error) {
+        console.error('Hybrid search error:', error);
+        showBasicInfo(query);
+      }
+    }
+    
+    // Show hybrid information (backend data + ML predictions)
+    async function showHybridInfo(backendData, query) {
+      console.log('Showing hybrid info for:', backendData.zone_name);
+      
+      // Show zone info panel
+      document.getElementById('placeholder').style.display = 'none';
+      document.getElementById('zoneInfo').classList.add('active');
+      
+      // Load weather data for this location
+      loadWeatherData(backendData.zone_name);
+      
+      // Show loading state
+      document.getElementById('zoneName').textContent = backendData.zone_name;
+      document.getElementById('zoneBorough').textContent = backendData.borough;
+      
+      // Set loading for ML-dependent stats
+      document.getElementById('safetyIndex').innerHTML = '<span class="safety-medium">Loading ML...</span>';
+      document.getElementById('avgFare').textContent = 'Loading ML...';
+      
+      // Show backend data immediately
+      document.getElementById('totalRides').textContent = backendData.total_rides ? backendData.total_rides.toLocaleString() : '—';
+      document.getElementById('avgDistance').textContent = backendData.avg_distance ? `${backendData.avg_distance.toFixed(1)} mi` : '—';
+      
+      try {
+        // Get ML prediction for safety and fare
+        const prediction = await getMLPrediction(backendData.zone_name, backendData.zone_name);
+        
+        if (prediction && prediction.status === 'success') {
+          const pred = prediction.prediction;
+          
+          // Update ML-dependent data
+          const safetyPct = pred.safety_index_percent;
+          const safetyClass = safetyPct >= 70 ? 'safety-high' : safetyPct >= 50 ? 'safety-medium' : 'safety-low';
+          document.getElementById('safetyIndex').innerHTML = `<span class="${safetyClass}">${safetyPct}%</span>`;
+          document.getElementById('avgFare').textContent = `$${pred.avg_fare_usd}`;
+          
+          // Update hourly chart with ML data
+          updateHourlyChartWithML(pred.safety_by_hours);
+          
+          // Update recommendations with ML data
+          updateRecommendationsWithML(pred.safest_times);
+          
+          console.log('Hybrid data displayed successfully');
+        } else {
+          console.log('ML prediction failed, using backend data only');
+          console.log('ML prediction result:', prediction);
+          // Fallback to backend data if ML fails
+          const safetyPct = Math.round(backendData.overall_safety_index * 100);
+          const safetyBadge = `<span class="${getSafetyClass(backendData.overall_safety_index)}">${safetyPct}%</span>`;
+          document.getElementById('safetyIndex').innerHTML = safetyBadge;
+          document.getElementById('avgFare').textContent = backendData.avg_fare ? `$${backendData.avg_fare.toFixed(2)}` : '—';
+        }
+      } catch (error) {
+        console.error('Error getting ML info:', error);
+        // Fallback to backend data
+        const safetyPct = Math.round(backendData.overall_safety_index * 100);
+        const safetyBadge = `<span class="${getSafetyClass(backendData.overall_safety_index)}">${safetyPct}%</span>`;
+        document.getElementById('safetyIndex').innerHTML = safetyBadge;
+        document.getElementById('avgFare').textContent = backendData.avg_fare ? `$${backendData.avg_fare.toFixed(2)}` : '—';
+      }
+    }
+    
+    // Show ML information for a location
+    async function showMLInfo(query) {
+      console.log('Showing ML info for:', query);
+      
+      // Show zone info panel
+      document.getElementById('placeholder').style.display = 'none';
+      document.getElementById('zoneInfo').classList.add('active');
+      
+      // Load weather data for this location
+      loadWeatherData(query);
+      
+      // Show loading state
+      document.getElementById('zoneName').textContent = query;
+      document.getElementById('zoneBorough').textContent = 'Loading ML data...';
+      
+      // Set loading for stats
+      document.getElementById('safetyIndex').innerHTML = '<span class="safety-medium">Loading...</span>';
+      document.getElementById('totalRides').textContent = 'Loading...';
+      document.getElementById('avgDistance').textContent = 'Loading...';
+      document.getElementById('avgFare').textContent = 'Loading...';
+      
+      try {
+        // Get ML prediction using the searched location as both pickup and dropoff
+        // This gives us safety and fare data for the area
+        const prediction = await getMLPrediction(query, query);
+        
+        if (prediction && prediction.status === 'success') {
+          const pred = prediction.prediction;
+          
+          // Populate with ML data
+          document.getElementById('zoneName').textContent = query;
+          document.getElementById('zoneBorough').textContent = 'ML Analysis';
+          
+          // Update safety index
+          const safetyPct = pred.safety_index_percent;
+          const safetyClass = safetyPct >= 70 ? 'safety-high' : safetyPct >= 50 ? 'safety-medium' : 'safety-low';
+          document.getElementById('safetyIndex').innerHTML = `<span class="${safetyClass}">${safetyPct}%</span>`;
+          
+          // Update fare
+          document.getElementById('avgFare').textContent = `$${pred.avg_fare_usd}`;
+          
+          // Update other stats with ML-derived data
+          document.getElementById('totalRides').textContent = 'Data Available';
+          document.getElementById('avgDistance').textContent = 'Data Available';
+          
+          // Update hourly chart with ML data
+          updateHourlyChartWithML(pred.safety_by_hours);
+          
+          // Update recommendations with ML data
+          updateRecommendationsWithML(pred.safest_times);
+          
+          console.log('ML data displayed successfully');
+        } else {
+          console.log('ML prediction failed, showing basic info');
+          console.log('ML prediction result:', prediction);
           showBasicInfo(query);
         }
       } catch (error) {
-        console.error('Backend search error:', error);
+        console.error('Error getting ML info:', error);
         showBasicInfo(query);
       }
+    }
+    
+    // Update hourly chart with ML data
+    function updateHourlyChartWithML(safetyByHours) {
+      const ctx = document.getElementById('hourlyChart');
+      if (!ctx) return;
+      
+      // Destroy existing chart if it exists
+      if (window.hourlyChartInstance) {
+        window.hourlyChartInstance.destroy();
+      }
+      
+      const hours = safetyByHours.map(h => h.hour);
+      const safetyValues = safetyByHours.map(h => h.safety_percent);
+      
+      window.hourlyChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: hours.map(h => `${h}:00`),
+          datasets: [{
+            label: 'Safety Index (%)',
+            data: safetyValues,
+            borderColor: '#60a5fa',
+            backgroundColor: 'rgba(96, 165, 250, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Update recommendations with ML data
+    function updateRecommendationsWithML(safestTimes) {
+      const container = document.getElementById('recommendations');
+      if (!container) return;
+      
+      container.innerHTML = safestTimes.map((time, i) => {
+        const hour = time.hour;
+        const safety = time.safety_percent;
+        const timeLabel = `${hour}:00 - ${(hour + 1) % 24}:00`;
+        
+        return `
+          <div class="recommendation-item">
+            <div class="recommendation-rank">#${i + 1}</div>
+            <div class="recommendation-time">${timeLabel}</div>
+            <div class="recommendation-safety safety-${safety >= 70 ? 'high' : safety >= 50 ? 'medium' : 'low'}">${safety}%</div>
+          </div>
+        `;
+      }).join('');
     }
     
     // Find backend data for a location

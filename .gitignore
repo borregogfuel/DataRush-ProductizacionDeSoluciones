@@ -1,27 +1,41 @@
-# Python
-.env
+# Archivos grandes que no se deben subir a GitHub
+solucion-las_tortugas_cosmicales/ML/parquet_data/
+*.parquet
+*.pkl
+*.csv
+*.log
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Archivos de Python
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
 *.pyd
 .Python
-.venv/
 env/
 venv/
-ENV/
-build/
-dist/
-*.egg-info/
+.venv/
 
-# VS Code
-.vscode/
+# Archivos de configuración local
+.env
+config.local.yaml
 
-# Node / Frontend
-node_modules/
+# Archivos de backup
+*.bak
+*.backup
+*.old
 
-# OS
-.DS_Store
-Thumbs.db
+# Archivos de logs
+logs/
+*.log
 
-# Project-generated files
-solucion-las_tortugas_cosmicales/backend/zone_stats.csv
+# Archivos de datos grandes
+data/
+models/
+cache/
+backups/

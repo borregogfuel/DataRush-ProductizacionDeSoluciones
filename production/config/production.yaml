@@ -1,0 +1,40 @@
+# Configuración para EC2 - Producción
+server:
+  host: "0.0.0.0"
+  port: 5001
+  debug: false
+  workers: 4
+
+# Rutas de datos en EC2
+data_paths:
+  parquet_data_dir: "/opt/nyc_taxi_ml/data/parquet_data"
+  location_id_to_precinct_path: "/opt/nyc_taxi_ml/data/LocationID_to_pretinct.csv"
+  nypd_complaint_data_path: "/opt/nyc_taxi_ml/data/NYPD_Complaint_Data_Historic_20251015.csv"
+
+# Modelos ML
+models:
+  fare_model_path: "/opt/nyc_taxi_ml/models/fare_model.joblib"
+  safety_model_path: "/opt/nyc_taxi_ml/models/safety_model.joblib"
+  fare_scaler_path: "/opt/nyc_taxi_ml/models/fare_scaler.joblib"
+  safety_scaler_path: "/opt/nyc_taxi_ml/models/safety_scaler.joblib"
+  feature_scalers_path: "/opt/nyc_taxi_ml/models/feature_scalers.joblib"
+  training_features_path: "/opt/nyc_taxi_ml/models/training_features.joblib"
+
+# Logging
+logging:
+  level: "INFO"
+  file: "/opt/nyc_taxi_ml/logs/api.log"
+  max_size: "10MB"
+  backup_count: 5
+
+# ML Engine
+ml_engine:
+  timeout: 30
+  max_retries: 3
+  cache_size: 1000
+
+# Seguridad
+security:
+  cors_origins: ["*"]
+  rate_limit: "1000/hour"
+  api_key_required: false
