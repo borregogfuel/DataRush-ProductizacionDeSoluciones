@@ -1562,12 +1562,72 @@
         'Brooklyn Bridge': 82,
         'Chinatown': 87,
         'Queens': 85,
-        'Bronx': 78
+        'Bronx': 78,
+        'JFK Airport': 45,  // Más bajo - aeropuerto
+        'LaGuardia Airport': 42,  // Más bajo - aeropuerto
+        'Newark Airport': 40,  // Más bajo - aeropuerto
+        'Airport': 43,  // Genérico para aeropuertos
+        'JFK': 45,
+        'LGA': 42,
+        'EWR': 40,
+        'Wall Street': 89,  // Zona financiera - alta seguridad
+        'Financial District': 89,
+        'SoHo': 85,
+        'Greenwich Village': 88,
+        'Upper East Side': 92,  // Zona residencial alta - muy segura
+        'Upper West Side': 90,
+        'Harlem': 65,  // Históricamente menos seguro
+        'East Village': 80,
+        'Lower East Side': 75,
+        'Midtown': 82,
+        'Downtown': 85
       };
       
-      const pickupScore = safetyScores[pickupLocation] || 80;
-      const dropoffScore = safetyScores[dropoffLocation] || 80;
+      // Función para encontrar el score más cercano
+      function findSafetyScore(location) {
+        const locationLower = location.toLowerCase();
+        
+        // Buscar coincidencias exactas primero
+        for (const [key, score] of Object.entries(safetyScores)) {
+          if (locationLower.includes(key.toLowerCase())) {
+            return score;
+          }
+        }
+        
+        // Si contiene palabras clave de aeropuerto
+        if (locationLower.includes('airport') || locationLower.includes('jfk') || 
+            locationLower.includes('lga') || locationLower.includes('ewr')) {
+          return 43;
+        }
+        
+        // Si contiene palabras de zonas menos seguras
+        if (locationLower.includes('harlem') || locationLower.includes('bronx') ||
+            locationLower.includes('east new york') || locationLower.includes('bedford-stuyvesant')) {
+          return 65;
+        }
+        
+        // Si contiene palabras de zonas seguras
+        if (locationLower.includes('upper east') || locationLower.includes('upper west') ||
+            locationLower.includes('financial') || locationLower.includes('wall street')) {
+          return 90;
+        }
+        
+        // Default basado en borough si se puede detectar
+        if (locationLower.includes('manhattan')) return 82;
+        if (locationLower.includes('brooklyn')) return 75;
+        if (locationLower.includes('queens')) return 78;
+        if (locationLower.includes('bronx')) return 65;
+        if (locationLower.includes('staten island')) return 85;
+        
+        // Default general
+        return 75;
+      }
+      
+      const pickupScore = findSafetyScore(pickupLocation);
+      const dropoffScore = findSafetyScore(dropoffLocation);
       const avgScore = Math.round((pickupScore + dropoffScore) / 2);
+      
+      console.log(`📍 ${pickupLocation}: ${pickupScore}%, ${dropoffLocation}: ${dropoffScore}%, Promedio: ${avgScore}%`);
       
       // Generar datos horarios
       const hourlySafety = [];
@@ -1595,8 +1655,20 @@
       
       // Calcular tarifa estimada
       let baseFare = 15.0;
-      if (pickupLocation === 'Central Park' || pickupLocation === 'Times Square') baseFare += 5.0;
-      if (pickupLocation !== dropoffLocation) baseFare += 8.0;
+      if (pickupLocation.toLowerCase().includes('airport') || pickupLocation.toLowerCase().includes('jfk') ||
+          pickupLocation.toLowerCase().includes('lga') || pickupLocation.toLowerCase().includes('ewr')) {
+        baseFare += 15.0; // Aeropuertos son más caros
+      } else if (pickupLocation.toLowerCase().includes('central park') || pickupLocation.toLowerCase().includes('times square')) {
+        baseFare += 5.0;
+      } else if (pickupLocation.toLowerCase().includes('manhattan')) {
+        baseFare += 3.0;
+      } else if (pickupLocation.toLowerCase().includes('brooklyn')) {
+        baseFare += 2.0;
+      }
+      
+      if (pickupLocation !== dropoffLocation) {
+        baseFare += 8.0;
+      }
       
       return {
         prediction: {
